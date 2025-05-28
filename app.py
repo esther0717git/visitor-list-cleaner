@@ -86,7 +86,7 @@ def clean_data(df):
     df["IC (Last 3 digits and suffix) 123A"] = df["IC (Last 3 digits and suffix) 123A"].astype(str).str[-4:]
 
     # ✅ Updated mobile number logic to remove decimals
-    df["Mobile Number"] = df["Mobile Number"].apply(lambda x: str(int(float(x))).strip() if pd.notnull(x) else "")
+    df["Mobile Number"] = df["Mobile Number"].astype(str).str.replace(r"\D", "", regex=True)
 
     df["Gender"] = df["Gender"].apply(clean_gender)
 
