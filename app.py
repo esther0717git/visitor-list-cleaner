@@ -176,7 +176,7 @@ def generate_excel(df):
         worksheet[f"B{insert_row + 1}"].border = border
 
             if warning_rows:
-                st.warning(f"⚠️ {len(warning_rows)} potential mismatch(es) found in Identification Type and Nationality/PR. Please check highlighted rows.")
+            st.warning(f"⚠️ {len(warning_rows)} potential mismatch(es) found in Identification Type and Nationality/PR. Please check highlighted rows.")} potential mismatch(es) found in Identification Type and Nationality/PR. Please check highlighted rows.")
 
     return output, mismatch_count
 
