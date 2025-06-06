@@ -79,33 +79,30 @@ def clean_data(df):
     df["Nationality (Country Name)"] = df["Nationality (Country Name)"].replace(nationality_map)
     df["Nationality (Country Name)"] = df["Nationality (Country Name)"].astype(str).str.title()
 
-    # Ensure columns are in correct order if swapped
-    if df["IC (Last 3 digits and suffix) 123A"].astype(str).str.contains("-", na=False).any():
+    # Ensure columns are in correct order if swapped (Work Permit Expiry and IC Suffix)
+    if df["IC (Last 3 digits and suffix) 123A"].str.contains("-", na=False).any():
         df[["IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"]] = df[["Work Permit Expiry Date", "IC (Last 3 digits and suffix) 123A"]]
 
     df["IC (Last 3 digits and suffix) 123A"] = df["IC (Last 3 digits and suffix) 123A"].astype(str).str[-4:]
-
-    # ✅ Updated mobile number logic to remove decimals
-    df["Mobile Number"] = df["Mobile Number"].astype(str).str.replace(r"\D", "", regex=True)
-
+    df["Mobile Number"] = pd.to_numeric(df["Mobile Number"], errors="coerce").fillna(0).astype(int).astype(str)
     df["Gender"] = df["Gender"].apply(clean_gender)
 
     df["Work Permit Expiry Date"] = pd.to_datetime(df["Work Permit Expiry Date"], errors="coerce").dt.strftime("%Y-%m-%d")
 
     return df
 
-def generate_excel(df):
+def generate_excel(xlsx, df):
     output = BytesIO()
-with pd.ExcelWriter(output, engine='openpyxl') as writer:
-    # Write original untouched sheets first
-    for sheet_name, sheet_df in xlsx.items():
-        if sheet_name != "Visitor List":
-            sheet_df.to_excel(writer, index=False, sheet_name=sheet_name)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        # Write original untouched sheets first
+        for sheet_name, sheet_df in xlsx.items():
+            if sheet_name != "Visitor List":
+                sheet_df.to_excel(writer, index=False, sheet_name=sheet_name)
 
-    # Overwrite Visitor List with cleaned version
-    df.to_excel(writer, index=False, sheet_name="Visitor List")
-    workbook = writer.book
-    worksheet = writer.sheets["Visitor List"]
+        # Overwrite Visitor List with cleaned version
+        df.to_excel(writer, index=False, sheet_name="Visitor List")
+        workbook = writer.book
+        worksheet = writer.sheets["Visitor List"]
 
         header_fill = PatternFill(start_color="94B455", end_color="94B455", fill_type="solid")
         light_red_fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
@@ -192,8 +189,7 @@ with pd.ExcelWriter(output, engine='openpyxl') as writer:
 uploaded_file = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
-    xlsx = pd.read_excel(uploaded_file, sheet_name=None)
-    df = xlsx["Visitor List"]
+    df = pd.read_excel(uploaded_file, sheet_name="Visitor List")
     df_cleaned = clean_data(df)
     output, mismatch_count = generate_excel(df_cleaned)
 
