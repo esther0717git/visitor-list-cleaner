@@ -6,7 +6,7 @@ from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
 
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
-st.title("🧼 Visitor List Excel Cleaner")
+st.title("🫧 CLARITY GATE - Data Validation and Cleaning")
 
 # “Download Sample Template” button
 with open("sample_template.xlsx", "rb") as f:
