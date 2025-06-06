@@ -80,7 +80,7 @@ def clean_data(df):
     df["Nationality (Country Name)"] = df["Nationality (Country Name)"].astype(str).str.title()
 
     # Ensure columns are in correct order if swapped
-    if df["IC (Last 3 digits and suffix) 123A"].str.contains("-", na=False).any():
+    if df["IC (Last 3 digits and suffix) 123A"].astype(str).str.contains("-", na=False).any():
         df[["IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"]] = df[["Work Permit Expiry Date", "IC (Last 3 digits and suffix) 123A"]]
 
     df["IC (Last 3 digits and suffix) 123A"] = df["IC (Last 3 digits and suffix) 123A"].astype(str).str[-4:]
