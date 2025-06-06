@@ -104,9 +104,8 @@ with pd.ExcelWriter(output, engine='openpyxl') as writer:
 
     # Overwrite Visitor List with cleaned version
     df.to_excel(writer, index=False, sheet_name="Visitor List")
-    
-        workbook = writer.book
-        worksheet = writer.sheets["Visitor List"]
+    workbook = writer.book
+    worksheet = writer.sheets["Visitor List"]
 
         header_fill = PatternFill(start_color="94B455", end_color="94B455", fill_type="solid")
         light_red_fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
