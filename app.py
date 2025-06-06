@@ -96,8 +96,15 @@ def clean_data(df):
 
 def generate_excel(df):
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name="Visitor List")
+with pd.ExcelWriter(output, engine='openpyxl') as writer:
+    # Write original untouched sheets first
+    for sheet_name, sheet_df in xlsx.items():
+        if sheet_name != "Visitor List":
+            sheet_df.to_excel(writer, index=False, sheet_name=sheet_name)
+
+    # Overwrite Visitor List with cleaned version
+    df.to_excel(writer, index=False, sheet_name="Visitor List")
+    
         workbook = writer.book
         worksheet = writer.sheets["Visitor List"]
 
@@ -186,7 +193,8 @@ def generate_excel(df):
 uploaded_file = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
-    df = pd.read_excel(uploaded_file, sheet_name="Visitor List")
+    xlsx = pd.read_excel(uploaded_file, sheet_name=None)
+    df = xlsx["Visitor List"]
     df_cleaned = clean_data(df)
     output, mismatch_count = generate_excel(df_cleaned)
 
