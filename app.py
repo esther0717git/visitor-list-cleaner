@@ -6,20 +6,36 @@ from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
 
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
-st.title("🫧 CLARITY GATE - Data Validation and Cleaning")
+st.title("🧼 Visitor List Excel Cleaner")
 
-# Download button for the sample template
+# ——————————————————————————————
+# DOWNLOAD A FRESH “sample_template.xlsx”
+# ——————————————————————————————
+# This button serves a static sample template for users to download.
+# Just make sure your “sample_template.xlsx” file is in the same folder as app.py.
 with open("sample_template.xlsx", "rb") as f:
     st.download_button(
         label="📎 Download Sample Template",
-        data=f,
+        data=f.read(),
         file_name="sample_template.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+
+
+# ——————————————————————————————
+# UTILITY FUNCTIONS FOR CLEANING
+# ——————————————————————————————
 def nationality_group(row):
-    """Assign sorting groups based on nationality and PR status."""
-    nationality = str(row["Nationality (Country Name)"]).lower()
+    """
+    Assigns a sort key so that rows are grouped:
+      1. Singapore nationals
+      2. PR (“Yes” or “Pr” in PR column), regardless of nationality
+      3. Malaysia (non-PR)
+      4. India
+      5. All others
+    """
+    nationality = str(row["Nationality (Country Name)"]).strip().lower()
     pr_status = str(row["PR"]).strip().lower()
     if nationality == "singapore":
         return 1
@@ -32,39 +48,54 @@ def nationality_group(row):
     else:
         return 5
 
-def split_name(name):
-    """Split a full name into first name and middle+last name."""
-    name = str(name).strip()
+def split_name(full_name: str):
+    """
+    Splits “Full Name As Per NRIC” into [First Name, Middle+Last].
+    If no space, returns [full_name, ""]
+    """
+    name = str(full_name).strip()
     if " " in name:
-        first_space = name.find(" ")
-        return pd.Series([name[:first_space], name[first_space+1:]])
+        idx = name.find(" ")
+        return pd.Series([name[:idx], name[idx+1:]])
     return pd.Series([name, ""])
 
 def clean_gender(val):
-    """Normalize gender values to 'Male' or 'Female'."""
-    val = str(val).strip().upper()
-    if val == "M":
+    """
+    Standardizes Gender:
+      “M” → “Male”
+      “F” → “Female”
+      “MALE” → “Male”
+      “FEMALE” → “Female”
+      Otherwise, return unchanged string-title.
+    """
+    v = str(val).strip().upper()
+    if v == "M":
         return "Male"
-    elif val == "F":
+    elif v == "F":
         return "Female"
-    elif val in ["MALE", "FEMALE"]:
-        return val.title()
-    return val
+    elif v in ["MALE", "FEMALE"]:
+        return v.title()
+    return v.title()
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Perform all the Visitor List cleaning steps:
-    - Rename columns
-    - Drop rows where columns D–M are all blank
-    - Sort by Company, nationality/PR grouping, and name
-    - Reassign serial numbers
-    - Normalize Vehicle Plate Number, Full Name, split into E/F
-    - Normalize Nationality, swap columns if IC/Work Permit are reversed
-    - Truncate IC suffix to last 4 chars
-    - Ensure Mobile Number has no decimals (stored as string of digits)
-    - Normalize Gender
-    - Format Work Permit Expiry Date as YYYY-MM-DD
+    Takes in the “Visitor List” dataframe and applies all cleaning rules:
+      • Drop rows that are entirely blank between columns D..M (Full Name to Mobile Number).
+      • Rename columns into our canonical set.
+      • Sort by Company, then by nationality/pr grouping, then by name.
+      • Re‐index S/N as 1…N.
+      • Clean “Vehicle Plate Number”: replace “/” or “,” with “;”, trim spaces.
+      • Proper‐case Full Name.
+      • Split Full Name into First / Middle+Last.
+      • Map “Chinese”→“China”, “Singaporean”→“Singapore” and ensure Title‐Case nationality.
+      • If the “IC (Last 3 digits and suffix)” column contains a “-” (i.e. looks like a date),
+        swap it with “Work Permit Expiry Date”.
+      • Extract only the last 4 characters of the IC column.
+      • Force “Mobile Number” to integer (removing decimals/spaces).
+      • Clean “Gender” per above.
+      • Force “Work Permit Expiry Date” into YYYY-MM-DD (drop time).
     """
+    # 1) Rename to the exact column list we expect:
     df.columns = [
         "S/N",
         "Vehicle Plate Number",
@@ -81,10 +112,10 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         "Mobile Number"
     ]
 
-    # Drop rows where columns D through M (indexes 3–12) are all NaN
+    # 2) Drop rows where columns D..M (index 3..12) are all blank:
     df = df.dropna(subset=df.columns[3:13], how="all")
 
-    # Sort by Company, then nationality/PR group, then nationality, then full name
+    # 3) Sort/Group by Company name → (Nationality+PR) → nationality → Full Name
     df["SortGroup"] = df.apply(nationality_group, axis=1)
     df.sort_values(
         by=["Company Full Name", "SortGroup", "Nationality (Country Name)", "Full Name As Per NRIC"],
@@ -92,208 +123,215 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     )
     df.drop(columns=["SortGroup"], inplace=True)
 
-    # Reassign S/N (serial numbers)
+    # 4) Reset the “S/N” column to run 1..len(df)
     df["S/N"] = range(1, len(df) + 1)
 
-    # Normalize Vehicle Plate Number: replace slashes/commas with ';', remove surrounding spaces, drop "nan"
+    # 5) Clean Vehicle Plate Number → replace “/” or “,” with “;”, strip
     df["Vehicle Plate Number"] = (
-        df["Vehicle Plate Number"]
-        .astype(str)
-        .str.replace(r"[\/,]", ";", regex=True)
+        df["Vehicle Plate Number"].astype(str)
+        .str.replace(r"[\/\,]", ";", regex=True)
         .str.replace(r"\s*;\s*", ";", regex=True)
         .str.strip()
         .replace("nan", "", regex=False)
     )
 
-    # Proper-case the Full Name and split into first vs middle+last
+    # 6) Proper‐case “Full Name As Per NRIC”
     df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
-    df[["First Name as per NRIC", "Middle and Last Name as per NRIC"]] = df[
-        "Full Name As Per NRIC"
-    ].apply(split_name)
 
-    # Normalize Nationality: map certain adjectives to country names, proper-case everything
+    # 7) Split into First / Middle+Last
+    df[["First Name as per NRIC", "Middle and Last Name as per NRIC"]] = df["Full Name As Per NRIC"].apply(split_name)
+
+    # 8) Map nationality: Chinese→China, Singaporean→Singapore, then Title‐Case
     nationality_map = {"Chinese": "China", "Singaporean": "Singapore"}
-    df["Nationality (Country Name)"] = (
-        df["Nationality (Country Name)"]
-        .replace(nationality_map)
-        .astype(str)
-        .str.title()
-    )
+    df["Nationality (Country Name)"] = df["Nationality (Country Name)"].replace(nationality_map)
+    df["Nationality (Country Name)"] = df["Nationality (Country Name)"].astype(str).str.title()
 
-    # If IC suffix and Work Permit columns were swapped, detect by looking for '-' in the IC field
+    # 9) Detect if “IC (Last 3 digits and suffix)” actually contains “‐” (like a date)
+    #    If so, swap it with “Work Permit Expiry Date”
     if df["IC (Last 3 digits and suffix) 123A"].astype(str).str.contains("-", na=False).any():
         df[["IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"]] = df[
             ["Work Permit Expiry Date", "IC (Last 3 digits and suffix) 123A"]
         ]
 
-    # Truncate IC suffix to last 4 characters
-    df["IC (Last 3 digits and suffix) 123A"] = df[
-        "IC (Last 3 digits and suffix) 123A"
-    ].astype(str).str[-4:]
+    # 10) Extract the last 4 chars of the IC suffix column
+    df["IC (Last 3 digits and suffix) 123A"] = df["IC (Last 3 digits and suffix) 123A"].astype(str).str[-4:]
 
-    # Remove all non-digit characters from Mobile Number, coerce to numeric then back to string
+    # 11) Force Mobile Number → remove any non-digit, coerce to int, then back to str
     df["Mobile Number"] = (
-        pd.to_numeric(df["Mobile Number"], errors="coerce")
+        pd.to_numeric(df["Mobile Number"].astype(str).str.replace(r"\D", "", regex=True), errors="coerce")
         .fillna(0)
         .astype(int)
         .astype(str)
     )
 
-    # Normalize Gender
+    # 12) Clean Gender per the helper
     df["Gender"] = df["Gender"].apply(clean_gender)
 
-    # Format Work Permit Expiry Date as YYYY-MM-DD (or blank if invalid)
-    df["Work Permit Expiry Date"] = pd.to_datetime(
-        df["Work Permit Expiry Date"], errors="coerce"
-    ).dt.strftime("%Y-%m-%d").fillna("")
+    # 13) Standardize “Work Permit Expiry Date” → YYYY-MM-DD only (drop time)
+    df["Work Permit Expiry Date"] = (
+        pd.to_datetime(df["Work Permit Expiry Date"], errors="coerce")
+        .dt.strftime("%Y-%m-%d")
+    )
 
     return df
 
-def generate_excel(xlsx_dict: dict, df_cleaned: pd.DataFrame):
+
+# ——————————————————————————————
+# GENERATE EXCEL (ALL TABS)
+# ——————————————————————————————
+def generate_excel(all_sheets_dict: dict, cleaned_df: pd.DataFrame):
     """
-    Recombine all tabs from the uploaded workbook:
-    - Write every sheet except "Visitor List" untouched.
-    - Overwrite the "Visitor List" sheet with the cleaned DataFrame.
-    - Apply styling (header color, borders, auto-fit, row height, highlights, summaries).
+    Accepts:
+      • all_sheets_dict: a dict of sheet_name → dataframe (read by pd.read_excel(..., sheet_name=None))
+      • cleaned_df: the cleaned “Visitor List” dataframe
+
+    Writes out a new in-memory workbook:
+      • For every sheet ≠ “Visitor List”, write it untouched.
+      • For “Visitor List”, overwrite with cleaned_df + styling.
+      • Return BytesIO buffer + mismatch_count.
     """
     output = BytesIO()
-
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        # Write each original sheet (except Visitor List) as-is
-        for sheet_name, sheet_df in xlsx_dict.items():
+        # 1) Write all untouched sheets first (except “Visitor List”)
+        for sheet_name, sheet_df in all_sheets_dict.items():
             if sheet_name != "Visitor List":
                 sheet_df.to_excel(writer, index=False, sheet_name=sheet_name)
 
-        # Overwrite Visitor List with cleaned data
-        df_cleaned.to_excel(writer, index=False, sheet_name="Visitor List")
+        # 2) Now write the cleaned “Visitor List”
+        cleaned_df.to_excel(writer, index=False, sheet_name="Visitor List")
+
+        # Grab workbook + worksheet objects
         workbook = writer.book
         worksheet = writer.sheets["Visitor List"]
 
-        # Define styling objects
-        header_fill = PatternFill(start_color="94B455", end_color="94B455", fill_type="solid")
+        # Set up common styles
+        header_fill   = PatternFill(start_color="94B455", end_color="94B455", fill_type="solid")
         light_red_fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
-        border = Border(
+        thin_border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
             top=Side(style="thin"),
-            bottom=Side(style="thin"),
+            bottom=Side(style="thin")
         )
         center_align = Alignment(horizontal="center", vertical="center")
-        font_style = Font(name="Calibri", size=11)
-        bold_font = Font(name="Calibri", size=11, bold=True)
+        calibri_font = Font(name="Calibri", size=11)
+        bold_calibri = Font(name="Calibri", size=11, bold=True)
 
-        # Apply border, alignment, and font to all cells
+        # 3) Apply borders, alignment, font to every cell
         for row in worksheet.iter_rows():
             for cell in row:
-                cell.border = border
+                cell.border = thin_border
                 cell.alignment = center_align
-                cell.font = font_style
+                cell.font = calibri_font
 
-        # Style the header row: fill color + bold
+        # 4) Header row (Row 1) gets the colored fill + bold font
         for col_idx in range(1, worksheet.max_column + 1):
-            cell = worksheet[f"{get_column_letter(col_idx)}1"]
-            cell.fill = header_fill
-            cell.font = bold_font
+            hdr_cell = worksheet[f"{get_column_letter(col_idx)}1"]
+            hdr_cell.fill = header_fill
+            hdr_cell.font = bold_calibri
 
-        # Freeze the top row
+        # 5) Freeze the top row
         worksheet.freeze_panes = worksheet["A2"]
 
-        # Validation: highlight mismatches between ID type, nationality, PR
+        # 6) Highlight logic: ID vs Nationality/PR mismatches
         mismatch_count = 0
         warning_rows = []
-        for row_idx in range(2, worksheet.max_row + 1):
-            id_type = str(worksheet[f"G{row_idx}"].value).strip().upper()
-            nationality = str(worksheet[f"J{row_idx}"].value).strip().title()
-            pr_status = str(worksheet[f"K{row_idx}"].value).strip().title()
+        for r in range(2, worksheet.max_row + 1):
+            id_type   = str(worksheet[f"G{r}"].value).strip().upper()
+            nationality = str(worksheet[f"J{r}"].value).strip().title()
+            pr_status = str(worksheet[f"K{r}"].value).strip().title()
 
             highlight = False
-            # NRIC must be Singapore or foreign PR
+            # If “NRIC” but NOT (Singapore OR foreign PR) → highlight
             if id_type == "NRIC" and not (
-                (nationality == "Singapore") or (nationality != "Singapore" and pr_status in ["Yes", "Pr"])
+                nationality == "Singapore" or (nationality != "Singapore" and pr_status in ["Yes", "Pr"])
             ):
                 highlight = True
-            # FIN cannot be Singapore or PR
-            if id_type == "FIN" and (
-                (nationality == "Singapore") or (pr_status in ["Yes", "Pr"])
-            ):
+            # If “FIN” but (Nationality=Singapore OR PR=Yes) → highlight
+            if id_type == "FIN" and (nationality == "Singapore" or pr_status in ["Yes", "Pr"]):
                 highlight = True
 
             if highlight:
-                warning_rows.append(row_idx)
-                worksheet[f"G{row_idx}"].fill = light_red_fill
-                worksheet[f"J{row_idx}"].fill = light_red_fill
-                worksheet[f"K{row_idx}"].fill = light_red_fill
+                warning_rows.append(r)
+                worksheet[f"G{r}"].fill = light_red_fill
+                worksheet[f"J{r}"].fill = light_red_fill
+                worksheet[f"K{r}"].fill = light_red_fill
                 mismatch_count += 1
 
-        # Auto-fit column widths
+        # 7) Auto-fit column widths
         for col in worksheet.columns:
-            max_length = 0
+            max_len = 0
             col_letter = get_column_letter(col[0].column)
             for cell in col:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            worksheet.column_dimensions[col_letter].width = max_length + 2
+                try:
+                    if cell.value:
+                        max_len = max(max_len, len(str(cell.value)))
+                except:
+                    pass
+            worksheet.column_dimensions[col_letter].width = max_len + 2
 
-        # Set a fixed row height for all rows
-        for row in worksheet.iter_rows():
-            worksheet.row_dimensions[row[0].row].height = 20
+        # 8) Auto-fit row heights to a fixed 20 points
+        for r in worksheet.iter_rows():
+            worksheet.row_dimensions[r[0].row].height = 20
 
-        # Collect all unique vehicle plates for the summary
-        vehicles = []
-        for val in df_cleaned["Vehicle Plate Number"].dropna():
-            vehicles.extend([v.strip() for v in str(val).split(";") if v.strip()])
+        # 9) “Vehicles” summary: gather every unique plate (split on “;”), sort, join by “;”
+        all_plates = []
+        for val in cleaned_df["Vehicle Plate Number"].dropna():
+            for chunk in str(val).split(";"):
+                chunk = chunk.strip()
+                if chunk:
+                    all_plates.append(chunk)
+        unique_sorted = sorted(set(all_plates))
 
-        # Insert "Vehicles" label + summary two rows below the last data row
         insert_row = worksheet.max_row + 2
-        if vehicles:
-            summary = ";".join(sorted(set(vehicles)))
+        if unique_sorted:
             worksheet[f"B{insert_row}"].value = "Vehicles"
-            worksheet[f"B{insert_row}"].border = border
+            worksheet[f"B{insert_row}"].border = thin_border
             worksheet[f"B{insert_row}"].alignment = center_align
 
-            worksheet[f"B{insert_row + 1}"].value = summary
-            worksheet[f"B{insert_row + 1}"].border = border
-            worksheet[f"B{insert_row + 1}"].alignment = center_align
+            worksheet[f"B{insert_row+1}"].value = ";".join(unique_sorted)
+            worksheet[f"B{insert_row+1}"].border = thin_border
+            worksheet[f"B{insert_row+1}"].alignment = center_align
             insert_row += 3
 
-        # Insert "Total Visitors" label + count one row below the vehicles summary
-        total_visitors = df_cleaned["Company Full Name"].notna().sum()
+        # 10) “Total Visitors” = count of non-blank “Company Full Name”
+        total_visitors = cleaned_df["Company Full Name"].notna().sum()
         worksheet[f"B{insert_row}"].value = "Total Visitors"
         worksheet[f"B{insert_row}"].alignment = center_align
-        worksheet[f"B{insert_row}"].border = border
+        worksheet[f"B{insert_row}"].border = thin_border
 
-        worksheet[f"B{insert_row + 1}"].value = total_visitors
-        worksheet[f"B{insert_row + 1}"].alignment = center_align
-        worksheet[f"B{insert_row + 1}"].border = border
+        worksheet[f"B{insert_row+1}"].value = total_visitors
+        worksheet[f"B{insert_row+1}"].alignment = center_align
+        worksheet[f"B{insert_row+1}"].border = thin_border
 
-        # If any warnings exist, show a Streamlit warning message
+        # 11) If there were any mismatches, show a Streamlit warning
         if warning_rows:
-            st.warning(
-                f"⚠️ {len(warning_rows)} potential mismatch(es) found in Identification Type and Nationality/PR. "
-                "Please check highlighted rows."
-            )
+            st.warning(f"⚠️ {len(warning_rows)} mismatch(es) found in Identification Type vs Nationality/PR. Please correct highlighted rows.")
 
     return output, mismatch_count
 
-# Streamlit file uploader
+
+
+# ——————————————————————————————
+# STREAMLIT Uploader / Download Button
+# ——————————————————————————————
 uploaded_file = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
-
 if uploaded_file:
-    # Read all sheets into a dict
-    xlsx_dict = pd.read_excel(uploaded_file, sheet_name=None)
-    # Extract the Visitor List sheet as a DataFrame
-    df_original = xlsx_dict.get("Visitor List", pd.DataFrame())
-    # Clean the Visitor List
-    df_cleaned = clean_data(df_original)
-    # Regenerate a new workbook (including tabs 2 & 3 untouched)
-    output, mismatch_count = generate_excel(xlsx_dict, df_cleaned)
+    # 1) Read all sheets into a dict
+    all_sheets = pd.read_excel(uploaded_file, sheet_name=None)
 
-    # Build dynamic filename
+    # 2) Take the “Visitor List” sheet and clean it
+    df_visitor = all_sheets.get("Visitor List", pd.DataFrame())
+    df_cleaned = clean_data(df_visitor)
+
+    # 3) Generate the new in-memory Excel with all tabs
+    output_buffer, mismatch_ct = generate_excel(all_sheets, df_cleaned)
+
+    # 4) Provide a timestamped download
     filename = f"Cleaned_Visitor_List_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
-    # Provide download button
     st.download_button(
         label="📥 Download Cleaned Excel File",
-        data=output.getvalue(),
+        data=output_buffer.getvalue(),
         file_name=filename,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
