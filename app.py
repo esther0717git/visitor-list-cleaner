@@ -101,7 +101,7 @@ def generate_excel(df):
         workbook = writer.book
         worksheet = writer.sheets["Visitor List"]
 
-        header_fill = PatternFill(start_color="FEC100", end_color="FEC100", fill_type="solid")
+        header_fill = PatternFill(start_color="94B455", end_color="94B455", fill_type="solid")
         light_red_fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
         border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
         center_align = Alignment(horizontal="center", vertical="center")
