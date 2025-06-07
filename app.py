@@ -148,18 +148,14 @@ def generate_excel(df: pd.DataFrame) -> BytesIO:
         # Freeze header
         ws.freeze_panes = "A2"
 
-        # Validation highlights
+        # — validation highlights: Singaporeans must use NRIC —
         warnings = 0
         for r in range(2, ws.max_row+1):
-            idt = str(ws[f"G{r}"].value).strip().upper()
-            nat = str(ws[f"J{r}"].value).strip().title()
-            pr  = str(ws[f"K{r}"].value).strip().title()
-            bad = (
-                (idt=="NRIC" and not (nat=="Singapore" or pr in ("Yes","Pr")))
-                or
-                (idt=="FIN"  and (nat=="Singapore" or pr in ("Yes","Pr")))
-            )
-            if bad:
+            idt  = str(ws[f"G{r}"].value or "").strip().upper()
+            nat  = str(ws[f"J{r}"].value or "").strip().title()
+
+            # if nationality is Singapore but ID type is not NRIC, highlight
+            if nat == "Singapore" and idt != "NRIC":
                 warnings += 1
                 for c in ("G","J","K"):
                     ws[f"{c}{r}"].fill = light_red_fill
