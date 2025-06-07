@@ -171,7 +171,28 @@ def generate_excel(all_sheets, cleaned_df):
 
         # Vehicles summary
         vals = cleaned_df["Vehicle Plate Number"].dropna().str.split(";").explode().str.strip()
-        unique_v = sorted(vals[vals!==""].unique())
+                # Vehicles summary
+        vals = cleaned_df["Vehicle Plate Number"] \
+            .dropna() \
+            .str.split(";") \
+            .explode() \
+            .str.strip()
+
+        # filter out empty strings, then get unique and sort
+        unique_v = sorted(vals[vals != ""].unique())
+
+        insert_row = ws.max_row + 2
+        if unique_v:
+            ws[f"B{insert_row}"].value     = "Vehicles"
+            ws[f"B{insert_row}"].border    = border
+            ws[f"B{insert_row}"].alignment = center_align
+
+            ws[f"B{insert_row+1}"].value     = ";".join(unique_v)
+            ws[f"B{insert_row+1}"].border    = border
+            ws[f"B{insert_row+1}"].alignment = center_align
+
+            insert_row += 3
+
         if unique_v:
             r0 = ws.max_row + 2
             ws[f"B{r0}"].value = "Vehicles"
