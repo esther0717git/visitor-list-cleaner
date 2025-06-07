@@ -59,7 +59,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # 3) Sort & reindex
     df["SortGroup"] = df.apply(nationality_group, axis=1)
     df.sort_values(
-        by=["Company Full Name","SortGroup","Nationality (Country Name)","Full Name As Per NRIC"],
+        by=["Company Full Name", "SortGroup", "Full Name As Per NRIC"],
         inplace=True
     )
     df.drop(columns="SortGroup", inplace=True)
