@@ -29,10 +29,12 @@ def nationality_group(row):
         return 2
     elif nat == "malaysia":
         return 3
-    elif nat == "india":
+    elif nat == "china":
         return 4
-    else:
+    elif nat == "india"
         return 5
+    else:
+        return 6
 
 def split_name(full_name):
     s = str(full_name).strip()
