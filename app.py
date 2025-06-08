@@ -182,25 +182,6 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
                 for col in ("G","J","K"):
                     ws[f"{col}{r}"].fill = warning_fill
 
-      #  for r in range(2, ws.max_row+1):
-            idt = str(ws[f"G{r}"].value).strip().upper()
-            nat = str(ws[f"J{r}"].value).strip().title()
-            pr  = str(ws[f"K{r}"].value).strip().lower()
-
-            bad = False
-            if idt in ("NRIC","PR"):
-                if nat != "Singapore":
-                    bad = True
-            elif idt == "FIN":
-                if nat == "Singapore" or pr in ("yes","pr"):
-                    bad = True
-            elif idt == "WORK PERMIT":
-                if not ws[f"I{r}"].value:
-                    bad = True
-            else:  # OTHERS
-                if not nat:
-                    bad = True#
-
             # highlight ID/Nat/PR
             if bad:
                 for col in ("G","J","K"):
