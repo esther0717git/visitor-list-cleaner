@@ -31,7 +31,7 @@ def nationality_group(row):
         return 3
     elif nat == "china":
         return 4
-    elif nat == "india"
+    elif nat == "india":
         return 5
     else:
         return 6
