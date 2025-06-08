@@ -66,7 +66,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=df.columns[3:13], how="all")
 
     # 3) Normalize nationality
-    nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia"}
+    nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","Indian": "India"}
     df["Nationality (Country Name)"] = (
         df["Nationality (Country Name)"]
           .astype(str)
@@ -158,7 +158,31 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         # 4) Highlight ID‐type & PR/nationality errors
         id_errors = 0
         nat_allowed = {"Singapore","India","Thailand","Malaysia","China"}
+        
         for r in range(2, ws.max_row+1):
+            idt = str(ws[f"G{r}"].value).strip().upper()
+            nat = str(ws[f"J{r}"].value).strip().title()
+            pr  = str(ws[f"K{r}"].value).strip().lower()
+
+    # existing NRIC logic …
+            bad = False
+            if idt == "NRIC" and not (
+                 nat == "Singapore" or (nat != "Singapore" and pr in ("yes","pr"))):
+                bad = True
+
+    # FIN must NOT have a PR flag
+            if idt == "FIN" and pr in ("yes","y","pr"):
+                bad = True
+
+    # FIN must also not be Singaporean
+            if idt == "FIN" and nat == "Singapore":
+                bad = True
+
+            if bad:
+                for col in ("G","J","K"):
+                    ws[f"{col}{r}"].fill = warning_fill
+
+      #  for r in range(2, ws.max_row+1):
             idt = str(ws[f"G{r}"].value).strip().upper()
             nat = str(ws[f"J{r}"].value).strip().title()
             pr  = str(ws[f"K{r}"].value).strip().lower()
@@ -175,7 +199,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
                     bad = True
             else:  # OTHERS
                 if not nat:
-                    bad = True
+                    bad = True#
 
             # highlight ID/Nat/PR
             if bad:
