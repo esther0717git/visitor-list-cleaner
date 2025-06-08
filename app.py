@@ -103,12 +103,13 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
         df["Full Name As Per NRIC"].apply(split_name)
     )
-
-    # 8) Swap IC vs WP if mis-entered
-    iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
+        
+    # 8) swap IC vs work-permit if mis-placed
+    iccol = "IC (Last 3 digits and suffix) 123A"
+    wpcol = "Work Permit Expiry Date"
     if df[iccol].astype(str).str.contains("-", na=False).any():
-        df[[iccol, wpcol]] = df[[wpcol, iccol]]
-
+        df[[iccol,wpcol]] = df[[wpcol,iccol]]
+        
     # 9) Trim IC suffix
     df[iccol] = df[iccol].astype(str).str[-4:]
 
