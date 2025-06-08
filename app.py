@@ -50,13 +50,12 @@ def clean_gender(g):
 # ───── Core cleaning ───────────────────────────────────────────────────────────
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    # 0) Strip stray whitespace on incoming headers
+    # 0) Strip whitespace, drop “Unnamed:” cols
+    df = df.copy()
     df.columns = df.columns.str.strip()
+    df = df.loc[:, ~df.columns.str.contains(r"^Unnamed", na=True)]
 
-    # 1) Drop any “Unnamed:” cols
-    df = df.loc[:, ~df.columns.str.contains(r"^Unnamed")]
-
-    # 2) Pad & reorder to exactly these 13 columns
+    # 1) Truncate to at most 13 cols, then pad to exactly 13 cols
     EXPECTED = [
         "S/N",
         "Vehicle Plate Number",
@@ -72,15 +71,19 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         "Gender",
         "Mobile Number",
     ]
-    for col in EXPECTED:
-        if col not in df.columns:
-            df[col] = ""
-    df = df[EXPECTED].copy()
+    # truncate
+    if df.shape[1] > len(EXPECTED):
+        df = df.iloc[:, : len(EXPECTED)]
+    # pad
+    while df.shape[1] < len(EXPECTED):
+        df[df.shape[1]] = ""
+    # now rename
+    df.columns = EXPECTED
 
-    # 3) Drop rows where all of cols D–M are blank
+    # 2) Drop rows where all of cols D–M are blank
     df = df.dropna(subset=EXPECTED[3:13], how="all")
 
-    # 4) Normalize nationality (incl. Indian→India)
+    # 3) Normalize nationality (incl. Indian→India)
     nat_map = {
         "chinese":    "China",
         "singaporean":"Singapore",
@@ -89,61 +92,59 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     }
     df["Nationality (Country Name)"] = (
         df["Nationality (Country Name)"]
-          .astype(str)
-          .str.strip()
-          .str.lower()
+          .astype(str).str.strip().str.lower()
           .replace(nat_map, regex=False)
           .str.title()
     )
 
-    # 5) Sort by company → nationality‐group → country → full name
+    # 4) Sort by Company → nat-group → Country → Full Name
     df["SortGroup"] = df.apply(nationality_group, axis=1)
     df = (
         df.sort_values(
-            ["Company Full Name", "SortGroup", "Nationality (Country Name)", "Full Name As Per NRIC"],
+            ["Company Full Name","SortGroup","Nationality (Country Name)","Full Name As Per NRIC"],
             ignore_index=True,
         )
         .drop(columns="SortGroup")
     )
 
-    # 6) Reset S/N
+    # 5) Reset S/N
     df["S/N"] = range(1, len(df) + 1)
 
-    # 7) Standardize Vehicle Plate Number
+    # 6) Standardize Vehicle Plate Number
     df["Vehicle Plate Number"] = (
         df["Vehicle Plate Number"].astype(str)
           .str.replace(r"[\/,]", ";", regex=True)
           .str.replace(r"\s*;\s*", ";", regex=True)
           .str.strip()
-          .replace("nan", "", regex=False)
+          .replace("nan","",regex=False)
     )
 
-    # 8) Proper‐case Full Name & split
+    # 7) Proper-case full name & split
     df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
     df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
         df["Full Name As Per NRIC"].apply(split_name)
     )
 
-    # 9) Swap IC vs Work Permit if reversed
+    # 8) Swap IC vs WP if reversed
     iccol, wpcol = EXPECTED[7], EXPECTED[8]
     if df[iccol].astype(str).str.contains("-", na=False).any():
-        df[[iccol, wpcol]] = df[[wpcol, iccol]]
+        df[[iccol,wpcol]] = df[[wpcol,iccol]]
 
-    # 10) Trim IC suffix to last 4 chars
+    # 9) Trim IC suffix to last 4
     df[iccol] = df[iccol].astype(str).str[-4:]
 
-    # 11) Mobile → digits only
-    df["Mobile Number"] = df["Mobile Number"].astype(str).str.replace(r"\D", "", regex=True)
+    # 10) Force Mobile to digits only
+    df["Mobile Number"] = df["Mobile Number"].astype(str).str.replace(r"\D","",regex=True)
 
-    # 12) Normalize gender
+    # 11) Normalize gender
     df["Gender"] = df["Gender"].apply(clean_gender)
 
-    # 13) Format Work Permit date as YYYY-MM-DD
+    # 12) Format WP Expiry Date → YYYY-MM-DD
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
 
     return df
 
-# ───── Build the single-sheet Excel ────────────────────────────────────────────
+# ───── Build the single-sheet Excel ───────────────────────────────────────────
 
 def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf = BytesIO()
@@ -153,50 +154,52 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
 
         # styling
         header_fill  = PatternFill("solid", fgColor="94B455")
-        warning_fill = PatternFill("solid", fgColor="FFCCCC")
+        warn_fill    = PatternFill("solid", fgColor="FFCCCC")
         border       = Border(Side("thin"),Side("thin"),Side("thin"),Side("thin"))
         center       = Alignment("center","center")
-        normal_font  = Font("Calibri",11)
-        bold_font    = Font("Calibri",11,bold=True)
+        normal_font  = Font(name="Calibri", size=11)
+        bold_font    = Font(name="Calibri", size=11, bold=True)
 
-        # 1) all‐cell border/alignment/font
+        # 1) apply to all cells
         for row in ws.iter_rows():
             for cell in row:
                 cell.border    = border
                 cell.alignment = center
                 cell.font      = normal_font
 
-        # 2) header styling
+        # 2) header row styling
         for c in range(1, ws.max_column+1):
             h = ws[f"{get_column_letter(c)}1"]
             h.fill = header_fill
             h.font = bold_font
 
-        # 3) freeze top row
+        # 3) freeze header
         ws.freeze_panes = ws["A2"]
 
-        # 4) highlight NRIC/FIN vs PR/Nat mismatches
-        mismatches = 0
+        # 4) highlight FIN+PR & ID-type rules
+        errs = 0
         for r in range(2, ws.max_row+1):
             idt = str(ws[f"G{r}"].value).strip().upper()
             nat = str(ws[f"J{r}"].value).strip().title()
             pr  = str(ws[f"K{r}"].value).strip().lower()
             bad = False
-            # NRIC must be SG or PR
-            if idt=="NRIC" and not (nat=="Singapore" or (nat!="Singapore" and pr in ("yes","pr"))):
+
+            # Only NRIC may have PR=Yes/Y
+            if idt != "NRIC" and pr in ("yes","y","pr"):
                 bad = True
-            # FIN must not be SG or have PR flag
-            if idt=="FIN" and (nat=="Singapore" or pr in ("yes","pr")):
+            # FIN must not be Singaporean or carry PR
+            if idt == "FIN" and (nat=="Singapore" or pr in ("yes","y","pr")):
                 bad = True
+
             if bad:
                 for col in ("G","J","K"):
-                    ws[f"{col}{r}"].fill = warning_fill
-                mismatches += 1
+                    ws[f"{col}{r}"].fill = warn_fill
+                errs += 1
 
-        if mismatches:
-            st.warning(f"⚠️ {mismatches} potential mismatch(es) found.")
+        if errs:
+            st.warning(f"⚠️ {errs} validation error(s) found.")
 
-        # 5) autosize + row height
+        # 5) auto-fit & fixed row height
         for col in ws.columns:
             w = max(len(str(cell.value)) for cell in col if cell.value)
             ws.column_dimensions[get_column_letter(col[0].column)].width = w + 2
@@ -228,7 +231,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf.seek(0)
     return buf
 
-# ───── Streamlit UI ────────────────────────────────────────────────────────────
+# ───── Streamlit UI ───────────────────────────────────────────────────────────
 uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 if uploaded:
     raw_df  = pd.read_excel(uploaded, sheet_name="Visitor List")
