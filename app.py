@@ -21,7 +21,6 @@ with open("sample_template.xlsx", "rb") as f:
 # ───── Helpers ─────────────────────────────────────────────────────────────────
 
 def nationality_group(row):
-    """Assigns a sort group based on nationality/PR."""
     nat = str(row["Nationality (Country Name)"]).strip().lower()
     pr  = str(row["PR"]).strip().lower()
     if nat == "singapore":
@@ -36,7 +35,6 @@ def nationality_group(row):
         return 5
 
 def split_name(full_name):
-    """Splits a title-cased full name into first / rest."""
     s = str(full_name).strip()
     if " " in s:
         i = s.find(" ")
@@ -44,7 +42,6 @@ def split_name(full_name):
     return pd.Series([s, ""])
 
 def clean_gender(g):
-    """Normalizes gender values."""
     v = str(g).strip().upper()
     if v == "M": return "Male"
     if v == "F": return "Female"
@@ -66,11 +63,17 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=df.columns[3:13], how="all")
 
     # 3) Normalize nationality
-    nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","Indian": "India"}
+    nat_map = {
+        "chinese": "China",
+        "singaporean": "Singapore",
+        "malaysian": "Malaysia",
+        "indian": "India",
+    }
     df["Nationality (Country Name)"] = (
         df["Nationality (Country Name)"]
           .astype(str)
           .str.strip()
+          .str.lower()
           .replace(nat_map, regex=False)
           .str.title()
     )
@@ -158,37 +161,36 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         # 4) Highlight ID‐type & PR/nationality errors
         id_errors = 0
         nat_allowed = {"Singapore","India","Thailand","Malaysia","China"}
-        
+
         for r in range(2, ws.max_row+1):
             idt = str(ws[f"G{r}"].value).strip().upper()
             nat = str(ws[f"J{r}"].value).strip().title()
             pr  = str(ws[f"K{r}"].value).strip().lower()
 
-    # existing NRIC logic …
             bad = False
+            # NRIC must be Singaporean or PR
             if idt == "NRIC" and not (
-                 nat == "Singapore" or (nat != "Singapore" and pr in ("yes","pr"))):
+               nat == "Singapore" or (nat != "Singapore" and pr in ("yes","pr"))):
                 bad = True
 
-    # FIN must NOT have a PR flag
-            if idt == "FIN" and pr in ("yes","y","pr"):
+            # FIN must NOT have PR flag or be Singapore
+            if idt == "FIN" and (pr in ("yes","y","pr") or nat == "Singapore"):
                 bad = True
 
-    # FIN must also not be Singaporean
-            if idt == "FIN" and nat == "Singapore":
+            # Work Permit must have a date
+            if idt == "WORK PERMIT" and not ws[f"I{r}"].value:
+                bad = True
+
+            # Others must at least have a nationality
+            if idt not in ("NRIC","FIN","WORK PERMIT") and nat == "":
                 bad = True
 
             if bad:
-                for col in ("G","J","K"):
-                    ws[f"{col}{r}"].fill = warning_fill
-
-            # highlight ID/Nat/PR
-            if bad:
-                for col in ("G","J","K"):
+                for col in ("G","J","K","I"):
                     ws[f"{col}{r}"].fill = warning_fill
                 id_errors += 1
 
-            # nationality allowed
+            # nationality allowed check
             if nat not in nat_allowed:
                 ws[f"J{r}"].fill = warning_fill
                 id_errors += 1
@@ -198,8 +200,8 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
 
         # 5) Autosize columns & set row height
         for col in ws.columns:
-            width = max(len(str(cell.value)) for cell in col if cell.value)
-            ws.column_dimensions[get_column_letter(col[0].column)].width = width + 2
+            w = max(len(str(cell.value)) for cell in col if cell.value)
+            ws.column_dimensions[get_column_letter(col[0].column)].width = w + 2
         for row in ws.iter_rows():
             ws.row_dimensions[row[0].row].height = 20
 
@@ -209,32 +211,33 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             plates += [p.strip() for p in str(val).split(";") if p.strip()]
         out_r = ws.max_row + 2
         if plates:
-            ws[f"B{out_r}"].value      = "Vehicles"
-            ws[f"B{out_r}"].border     = border
-            ws[f"B{out_r}"].alignment  = center
-            ws[f"B{out_r+1}"].value    = ";".join(sorted(set(plates)))
-            ws[f"B{out_r+1}"].border   = border
-            ws[f"B{out_r+1}"].alignment= center
+            ws[f"B{out_r}"].value       = "Vehicles"
+            ws[f"B{out_r}"].border      = border
+            ws[f"B{out_r}"].alignment   = center
+            ws[f"B{out_r+1}"].value     = ";".join(sorted(set(plates)))
+            ws[f"B{out_r+1}"].border    = border
+            ws[f"B{out_r+1}"].alignment = center
             out_r += 2
 
         # 7) Total Visitors
-        ws[f"B{out_r}"].value      = "Total Visitors"
-        ws[f"B{out_r}"].border     = border
-        ws[f"B{out_r}"].alignment  = center
-        ws[f"B{out_r+1}"].value    = df["Company Full Name"].notna().sum()
-        ws[f"B{out_r+1}"].border   = border
-        ws[f"B{out_r+1}"].alignment= center
+        ws[f"B{out_r}"].value       = "Total Visitors"
+        ws[f"B{out_r}"].border      = border
+        ws[f"B{out_r}"].alignment   = center
+        ws[f"B{out_r+1}"].value     = df["Company Full Name"].notna().sum()
+        ws[f"B{out_r+1}"].border    = border
+        ws[f"B{out_r+1}"].alignment = center
 
     buf.seek(0)
     return buf
 
 # ───── Streamlit UI: Upload & Download ─────────────────────────────────────────
+
 uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 if uploaded:
-    raw_df   = pd.read_excel(uploaded, sheet_name="Visitor List")
-    cleaned  = clean_data(raw_df)
-    out_buf  = generate_visitor_only(cleaned)
-    fname    = f"Cleaned_VisitorList_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+    raw_df  = pd.read_excel(uploaded, sheet_name="Visitor List")
+    cleaned = clean_data(raw_df)
+    out_buf = generate_visitor_only(cleaned)
+    fname   = f"Cleaned_VisitorList_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
     st.download_button(
         label="📥 Download Cleaned Visitor List Only",
         data=out_buf.getvalue(),
