@@ -9,7 +9,7 @@ from openpyxl.utils import get_column_letter
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
 st.title("🧼 Visitor List Excel Cleaner")
 
-# ───── Download Sample Template Button ───────────────────────────────────────
+# ───── Download Sample Template ───────────────────────────────────────────────
 with open("sample_template.xlsx", "rb") as f:
     st.download_button(
         label="📎 Download Sample Template",
@@ -18,7 +18,7 @@ with open("sample_template.xlsx", "rb") as f:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# ───── Helper Functions ───────────────────────────────────────────────────────
+# ───── Helpers ─────────────────────────────────────────────────────────────────
 
 def nationality_group(row):
     nat = str(row.get("Nationality (Country Name)", "")).strip().lower()
@@ -51,17 +51,11 @@ def clean_gender(g):
 # ───── Core Cleaning Logic ────────────────────────────────────────────────────
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    # — Step 0: pad or trim to exactly 13 columns —
-    expected_cols = 13
-    if df.shape[1] > expected_cols:
-        df = df.iloc[:, :expected_cols]
-    elif df.shape[1] < expected_cols:
-        # add blank columns until we have exactly 13
-        for i in range(expected_cols - df.shape[1]):
-            df[f"_extra_{i}"] = ""
-    
-    # 1) Rename columns
-    df.columns = [
+    # — Step 0: drop any “Unnamed” junk columns —
+    df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+
+    # — Step 1: ensure exactly these 13 by name (pad missing with blanks):
+    EXPECTED = [
         "S/N",
         "Vehicle Plate Number",
         "Company Full Name",
@@ -76,16 +70,21 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         "Gender",
         "Mobile Number",
     ]
+    for col in EXPECTED:
+        if col not in df.columns:
+            df[col] = ""
+    # now pick only those, in order
+    df = df[EXPECTED].copy()
 
-    # 2) Drop fully-blank rows in D–M
-    df = df.dropna(subset=df.columns[3:13], how="all")
+    # — Step 2: drop fully blank rows in cols D–M
+    df = df.dropna(subset=EXPECTED[3:13], how="all")
 
-    # 3) Normalize nationality (including “Indian”→“India”)
+    # — Step 3: normalize nationality (including Indian→India)
     nat_map = {
-        "chinese": "China",
-        "singaporean": "Singapore",
-        "malaysian": "Malaysia",
-        "indian": "India"
+        "chinese":    "China",
+        "singaporean":"Singapore",
+        "malaysian":  "Malaysia",
+        "indian":     "India",
     }
     df["Nationality (Country Name)"] = (
         df["Nationality (Country Name)"]
@@ -96,7 +95,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .str.title()
     )
 
-    # 4) Sort by company, nationality-group, country, name
+    # — Step 4: sort by company → nationality-group → country → name
     df["SortGroup"] = df.apply(nationality_group, axis=1)
     df = (
         df.sort_values(
@@ -111,10 +110,10 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         .drop(columns="SortGroup")
     )
 
-    # 5) Reset S/N
+    # — Step 5: reassign S/N 1..N
     df["S/N"] = range(1, len(df) + 1)
 
-    # 6) Standardize vehicle plates
+    # — Step 6: standardize vehicle plates
     df["Vehicle Plate Number"] = (
         df["Vehicle Plate Number"].astype(str)
           .str.replace(r"[\/,]", ";", regex=True)
@@ -123,27 +122,27 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .replace("nan", "", regex=False)
     )
 
-    # 7) Proper-case full name + split into first/rest
+    # — Step 7: proper-case + split name
     df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
     df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
         df["Full Name As Per NRIC"].apply(split_name)
     )
 
-    # 8) Swap IC vs WP if mis-entered
-    iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
+    # — Step 8: swap IC vs WP if reversed (detect “-” in IC column)
+    iccol, wpcol = EXPECTED[7], EXPECTED[8]
     if df[iccol].astype(str).str.contains("-", na=False).any():
         df[[iccol, wpcol]] = df[[wpcol, iccol]]
 
-    # 9) Trim IC suffix to last 4 chars
+    # — Step 9: trim IC suffix
     df[iccol] = df[iccol].astype(str).str[-4:]
 
-    # 10) Clean mobile → digits only
+    # — Step 10: mobile → digits only
     df["Mobile Number"] = df["Mobile Number"].astype(str).str.replace(r"\D", "", regex=True)
 
-    # 11) Normalize gender
+    # — Step 11: normalize gender
     df["Gender"] = df["Gender"].apply(clean_gender)
 
-    # 12) Format WP expiry date
+    # — Step 12: format WP expiry date YYYY-MM-DD
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
 
     return df
@@ -156,48 +155,43 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         df.to_excel(writer, index=False, sheet_name="Visitor List")
         ws = writer.sheets["Visitor List"]
 
-        # styling
+        # styling objects
         header_fill  = PatternFill("solid", fgColor="94B455")
         warning_fill = PatternFill("solid", fgColor="FFCCCC")
         border       = Border(Side("thin"),Side("thin"),Side("thin"),Side("thin"))
         center       = Alignment("center","center")
-        normal_font  = Font("Calibri", 11)
-        bold_font    = Font("Calibri", 11, bold=True)
+        normal_font  = Font("Calibri",11)
+        bold_font    = Font("Calibri",11,bold=True)
 
-        # 1) border/alignment/font
+        # 1) all-cell border/alignment/font
         for row in ws.iter_rows():
             for cell in row:
                 cell.border    = border
                 cell.alignment = center
                 cell.font      = normal_font
 
-        # 2) header styling
+        # 2) header row styling
         for c in range(1, ws.max_column+1):
             h = ws[f"{get_column_letter(c)}1"]
             h.fill = header_fill
             h.font = bold_font
 
-        # 3) freeze panes
+        # 3) freeze top row
         ws.freeze_panes = ws["A2"]
 
-        # 4) validation highlights
+        # 4) highlight ID vs PR/Nat errors
         mismatches = 0
         for r in range(2, ws.max_row+1):
             idt = str(ws[f"G{r}"].value).strip().upper()
             nat = str(ws[f"J{r}"].value).strip().title()
             pr  = str(ws[f"K{r}"].value).strip().lower()
             bad = False
-
             # NRIC must be SG or PR
-            if idt == "NRIC" and not (
-                nat == "Singapore" or (nat != "Singapore" and pr in ("yes","pr"))
-            ):
+            if idt=="NRIC" and not (nat=="Singapore" or (nat!="Singapore" and pr in ("yes","pr"))):
                 bad = True
-
-            # FIN cannot be PR or SG
-            if idt == "FIN" and (pr in ("yes","pr") or nat == "Singapore"):
+            # FIN must not be PR or SG
+            if idt=="FIN" and (pr in ("yes","pr") or nat=="Singapore"):
                 bad = True
-
             if bad:
                 for col in ("G","J","K"):
                     ws[f"{col}{r}"].fill = warning_fill
@@ -206,10 +200,10 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         if mismatches:
             st.warning(f"⚠️ {mismatches} potential mismatch(es) found.")
 
-        # 5) autosize & row height
+        # 5) autosize columns & row height
         for col in ws.columns:
-            width = max(len(str(cell.value)) for cell in col if cell.value)
-            ws.column_dimensions[get_column_letter(col[0].column)].width = width + 2
+            w = max(len(str(cell.value)) for cell in col if cell.value)
+            ws.column_dimensions[get_column_letter(col[0].column)].width = w + 2
         for row in ws.iter_rows():
             ws.row_dimensions[row[0].row].height = 20
 
@@ -219,32 +213,32 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             plates += [p.strip() for p in str(v).split(";") if p.strip()]
         ir = ws.max_row + 2
         if plates:
-            ws[f"B{ir}"].value      = "Vehicles"
-            ws[f"B{ir}"].border     = border
-            ws[f"B{ir}"].alignment  = center
-            ws[f"B{ir+1}"].value    = ";".join(sorted(set(plates)))
-            ws[f"B{ir+1}"].border   = border
-            ws[f"B{ir+1}"].alignment= center
+            ws[f"B{ir}"].value     = "Vehicles"
+            ws[f"B{ir}"].border    = border
+            ws[f"B{ir}"].alignment = center
+            ws[f"B{ir+1}"].value   = ";".join(sorted(set(plates)))
+            ws[f"B{ir+1}"].border  = border
+            ws[f"B{ir+1}"].alignment = center
             ir += 2
 
         # 7) total visitors
-        ws[f"B{ir}"].value      = "Total Visitors"
-        ws[f"B{ir}"].border     = border
-        ws[f"B{ir}"].alignment  = center
-        ws[f"B{ir+1}"].value    = df["Company Full Name"].notna().sum()
-        ws[f"B{ir+1}"].border   = border
-        ws[f"B{ir+1}"].alignment= center
+        ws[f"B{ir}"].value     = "Total Visitors"
+        ws[f"B{ir}"].border    = border
+        ws[f"B{ir}"].alignment = center
+        ws[f"B{ir+1}"].value   = df["Company Full Name"].notna().sum()
+        ws[f"B{ir+1}"].border  = border
+        ws[f"B{ir+1}"].alignment = center
 
     buf.seek(0)
     return buf
 
-# ───── Streamlit file uploader & download ────────────────────────────────────
+# ───── Streamlit UI ────────────────────────────────────────────────────────────
 uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 if uploaded:
-    raw_df = pd.read_excel(uploaded, sheet_name="Visitor List")
+    raw_df  = pd.read_excel(uploaded, sheet_name="Visitor List")
     cleaned = clean_data(raw_df)
     out_buf = generate_visitor_only(cleaned)
-    fname = f"Cleaned_VisitorList_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+    fname   = f"Cleaned_VisitorList_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
     st.download_button(
         label="📥 Download Cleaned Visitor List Only",
         data=out_buf.getvalue(),
