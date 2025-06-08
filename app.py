@@ -5,17 +5,16 @@ from datetime import datetime
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
 
-# ───── Streamlit page setup ───────────────────────────────────────────────────
+# ───── Streamlit setup ────────────────────────────────────────────────────────
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
 st.title("🧼 Visitor List Excel Cleaner")
 
-# ───── Download Sample Template ───────────────────────────────────────────────
 with open("sample_template.xlsx", "rb") as f:
     st.download_button(
         label="📎 Download Sample Template",
         data=f,
         file_name="sample_template.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 # ───── Helpers ─────────────────────────────────────────────────────────────────
@@ -25,7 +24,7 @@ def nationality_group(row):
     pr  = str(row.get("PR", "")).strip().lower()
     if nat == "singapore":
         return 1
-    elif pr in ("yes","y","pr"):
+    elif pr in ("yes", "y", "pr"):
         return 2
     elif nat == "malaysia":
         return 3
@@ -45,16 +44,19 @@ def clean_gender(g):
     v = str(g).strip().upper()
     if v == "M": return "Male"
     if v == "F": return "Female"
-    if v in ("MALE","FEMALE"): return v.title()
+    if v in ("MALE", "FEMALE"): return v.title()
     return v
 
-# ───── Core Cleaning Logic ────────────────────────────────────────────────────
+# ───── Core cleaning ───────────────────────────────────────────────────────────
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    # — Step 0: drop any “Unnamed” junk columns —
-    df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+    # 0) Strip stray whitespace on incoming headers
+    df.columns = df.columns.str.strip()
 
-    # — Step 1: ensure exactly these 13 by name (pad missing with blanks):
+    # 1) Drop any “Unnamed:” cols
+    df = df.loc[:, ~df.columns.str.contains(r"^Unnamed")]
+
+    # 2) Pad & reorder to exactly these 13 columns
     EXPECTED = [
         "S/N",
         "Vehicle Plate Number",
@@ -73,13 +75,12 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     for col in EXPECTED:
         if col not in df.columns:
             df[col] = ""
-    # now pick only those, in order
     df = df[EXPECTED].copy()
 
-    # — Step 2: drop fully blank rows in cols D–M
+    # 3) Drop rows where all of cols D–M are blank
     df = df.dropna(subset=EXPECTED[3:13], how="all")
 
-    # — Step 3: normalize nationality (including Indian→India)
+    # 4) Normalize nationality (incl. Indian→India)
     nat_map = {
         "chinese":    "China",
         "singaporean":"Singapore",
@@ -95,25 +96,20 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .str.title()
     )
 
-    # — Step 4: sort by company → nationality-group → country → name
+    # 5) Sort by company → nationality‐group → country → full name
     df["SortGroup"] = df.apply(nationality_group, axis=1)
     df = (
         df.sort_values(
-            by=[
-                "Company Full Name",
-                "SortGroup",
-                "Nationality (Country Name)",
-                "Full Name As Per NRIC",
-            ],
+            ["Company Full Name", "SortGroup", "Nationality (Country Name)", "Full Name As Per NRIC"],
             ignore_index=True,
         )
         .drop(columns="SortGroup")
     )
 
-    # — Step 5: reassign S/N 1..N
+    # 6) Reset S/N
     df["S/N"] = range(1, len(df) + 1)
 
-    # — Step 6: standardize vehicle plates
+    # 7) Standardize Vehicle Plate Number
     df["Vehicle Plate Number"] = (
         df["Vehicle Plate Number"].astype(str)
           .str.replace(r"[\/,]", ";", regex=True)
@@ -122,32 +118,32 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .replace("nan", "", regex=False)
     )
 
-    # — Step 7: proper-case + split name
+    # 8) Proper‐case Full Name & split
     df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
     df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
         df["Full Name As Per NRIC"].apply(split_name)
     )
 
-    # — Step 8: swap IC vs WP if reversed (detect “-” in IC column)
+    # 9) Swap IC vs Work Permit if reversed
     iccol, wpcol = EXPECTED[7], EXPECTED[8]
     if df[iccol].astype(str).str.contains("-", na=False).any():
         df[[iccol, wpcol]] = df[[wpcol, iccol]]
 
-    # — Step 9: trim IC suffix
+    # 10) Trim IC suffix to last 4 chars
     df[iccol] = df[iccol].astype(str).str[-4:]
 
-    # — Step 10: mobile → digits only
+    # 11) Mobile → digits only
     df["Mobile Number"] = df["Mobile Number"].astype(str).str.replace(r"\D", "", regex=True)
 
-    # — Step 11: normalize gender
+    # 12) Normalize gender
     df["Gender"] = df["Gender"].apply(clean_gender)
 
-    # — Step 12: format WP expiry date YYYY-MM-DD
+    # 13) Format Work Permit date as YYYY-MM-DD
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
 
     return df
 
-# ───── Build single-sheet Excel ───────────────────────────────────────────────
+# ───── Build the single-sheet Excel ────────────────────────────────────────────
 
 def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf = BytesIO()
@@ -155,7 +151,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         df.to_excel(writer, index=False, sheet_name="Visitor List")
         ws = writer.sheets["Visitor List"]
 
-        # styling objects
+        # styling
         header_fill  = PatternFill("solid", fgColor="94B455")
         warning_fill = PatternFill("solid", fgColor="FFCCCC")
         border       = Border(Side("thin"),Side("thin"),Side("thin"),Side("thin"))
@@ -163,14 +159,14 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         normal_font  = Font("Calibri",11)
         bold_font    = Font("Calibri",11,bold=True)
 
-        # 1) all-cell border/alignment/font
+        # 1) all‐cell border/alignment/font
         for row in ws.iter_rows():
             for cell in row:
                 cell.border    = border
                 cell.alignment = center
                 cell.font      = normal_font
 
-        # 2) header row styling
+        # 2) header styling
         for c in range(1, ws.max_column+1):
             h = ws[f"{get_column_letter(c)}1"]
             h.fill = header_fill
@@ -179,7 +175,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         # 3) freeze top row
         ws.freeze_panes = ws["A2"]
 
-        # 4) highlight ID vs PR/Nat errors
+        # 4) highlight NRIC/FIN vs PR/Nat mismatches
         mismatches = 0
         for r in range(2, ws.max_row+1):
             idt = str(ws[f"G{r}"].value).strip().upper()
@@ -189,8 +185,8 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             # NRIC must be SG or PR
             if idt=="NRIC" and not (nat=="Singapore" or (nat!="Singapore" and pr in ("yes","pr"))):
                 bad = True
-            # FIN must not be PR or SG
-            if idt=="FIN" and (pr in ("yes","pr") or nat=="Singapore"):
+            # FIN must not be SG or have PR flag
+            if idt=="FIN" and (nat=="Singapore" or pr in ("yes","pr")):
                 bad = True
             if bad:
                 for col in ("G","J","K"):
@@ -200,7 +196,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         if mismatches:
             st.warning(f"⚠️ {mismatches} potential mismatch(es) found.")
 
-        # 5) autosize columns & row height
+        # 5) autosize + row height
         for col in ws.columns:
             w = max(len(str(cell.value)) for cell in col if cell.value)
             ws.column_dimensions[get_column_letter(col[0].column)].width = w + 2
@@ -243,5 +239,5 @@ if uploaded:
         label="📥 Download Cleaned Visitor List Only",
         data=out_buf.getvalue(),
         file_name=fname,
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
