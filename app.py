@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 
 # ───── Streamlit setup ────────────────────────────────────────────────────────
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
-st.title("🫧 CLARITY GATE ")
+st.title("🫧 CLARITY GATE - DATA CLEANING & VALIDATION ")
 
 # ───── Download Sample Template ───────────────────────────────────────────────
 with open("sample_template.xlsx", "rb") as f:
