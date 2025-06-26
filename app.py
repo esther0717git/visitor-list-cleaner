@@ -152,8 +152,8 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         warning_fill = PatternFill("solid", fgColor="FFCCCC")
         border       = Border(Side("thin"),Side("thin"),Side("thin"),Side("thin"))
         center       = Alignment("center","center")
-        normal_font  = Font(name="Calibri", size=11)
-        bold_font    = Font(name="Calibri", size=11, bold=True)
+        normal_font  = Font(name="Calibri", size=9)
+        bold_font    = Font(name="Calibri", size=9, bold=True)
 
         # 1) Apply borders, alignment, font
         for row in ws.iter_rows():
