@@ -129,13 +129,24 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # 9) Trim IC suffix
     df[iccol] = df[iccol].astype(str).str[-4:]
 
-    # 10) Clean mobile to exactly 8 digits
-    df["Mobile Number"] = (
-        df["Mobile Number"]
-        .astype(str)
-        .apply(lambda x: re.sub(r"\D", "", x))                      # strip non-digits
-        .apply(lambda x: f"{int(x):08d}"[-8:] if x.isdigit() else "")  # cast, zero-pad, take last 8
-    )
+# 10) Fix Mobile Number back to the original 8 digits—
+    def fix_mobile(x):
+        d = re.sub(r"\D", "", str(x))
+        # if too long...
+        if len(d) > 8:
+            extra = len(d) - 8
+            # if the extras are just decimal zeros, strip from the right
+            if d.endswith("0" * extra):
+                d = d[:-extra]
+            else:
+                # otherwise assume it's a country code and drop from the left
+                d = d[-8:]
+        # if too short, left-pad with zeros
+        if len(d) < 8:
+            d = d.zfill(8)
+        return d
+
+    df["Mobile Number"] = df["Mobile Number"].apply(fix_mobile)
 
     # 11) Normalize gender
     df["Gender"] = df["Gender"].apply(clean_gender)
