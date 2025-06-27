@@ -249,28 +249,32 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     return buf
 
 # ───── Streamlit UI: Upload & Download ────────────────────────────────────────
- app.py
-@@
- uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
- if uploaded:
-    # 1) read the sheet
+uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
+if uploaded:
+    # 1) Read the "Visitor List" sheet
     raw_df = pd.read_excel(uploaded, sheet_name="Visitor List")
 
-    # 2) capture whatever's in cell C2 (excel row 2, col C)
-    #    which is raw_df.iloc[0,2] since pandas uses row0→excel row2
+    # 2) Capture whatever’s in cell C2 (excel row 2, column C → pandas row 0, col 2)
     company_cell = raw_df.iloc[0, 2]
     company = (
         str(company_cell).strip().replace(" ", "_")
         if pd.notna(company_cell) and str(company_cell).strip()
         else "VisitorList"
     )
- 
-     cleaned = clean_data(raw_df)
-     out_buf = generate_visitor_only(cleaned)
 
-     # build filename: CompanyName_YYYYMMDD.xlsx
-     today = datetime.now().strftime("%Y%m%d")
+    # 3) Clean & generate output
+    cleaned = clean_data(raw_df)
+    out_buf = generate_visitor_only(cleaned)
+
+    # 4) Build filename: CompanyName_YYYYMMDD.xlsx
+    today = datetime.now().strftime("%Y%m%d")
     fname = f"{company}_{today}.xlsx"
- 
-     st.download_button(
-         label="📥 Download Cleaned Visitor List Only",
+
+    # 5) Serve download
+    st.download_button(
+        label="📥 Download Cleaned Visitor List",
+        data=out_buf.getvalue(),
+        file_name=fname,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
