@@ -158,30 +158,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 # ───── Build & style the single sheet Excel ────────────────────────────────────
-def auto_fit(worksheet):
-    # Auto-fit column widths
-    for col in worksheet.columns:
-        max_length = max(
-            (len(str(cell.value)) for cell in col if cell.value is not None),
-            default=0,
-        )
-        worksheet.column_dimensions[
-            get_column_letter(col[0].column)
-        ].width = max_length + 2
 
-    # Auto-fit row heights (approximate by counting line breaks)
-    for row in worksheet.iter_rows():
-        max_height = 0
-        for cell in row:
-            if cell.value:
-                # each “\n” adds one more line; base line height ~= 15
-                lines = str(cell.value).split("\n")
-                height = 15 * len(lines)
-                if height > max_height:
-                    max_height = height
-        if max_height:
-            worksheet.row_dimensions[row[0].row].height = max_height
-            
 def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
