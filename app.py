@@ -268,8 +268,8 @@ if uploaded:
     out_buf = generate_visitor_only(cleaned)
 
     # 4) Build filename: CompanyName_YYYYMMDD.xlsx in Asia/Singapore time
-     today = datetime.now(ZoneInfo("Asia/Singapore")).strftime("%Y%m%d")
-     fname = f"{company}_{today}.xlsx"
+    today = datetime.now(ZoneInfo("Asia/Singapore")).strftime("%Y%m%d")
+    fname = f"{company}_{today}.xlsx"
 
     # 5) Serve download
     st.download_button(
