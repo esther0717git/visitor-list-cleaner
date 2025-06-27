@@ -267,9 +267,9 @@ if uploaded:
     cleaned = clean_data(raw_df)
     out_buf = generate_visitor_only(cleaned)
 
-    # 4) Build filename: CompanyName_YYYYMMDD.xlsx
-    today = datetime.now().strftime("%Y%m%d")
-    fname = f"{company}_{today}.xlsx"
+    # 4) Build filename: CompanyName_YYYYMMDD.xlsx in Asia/Singapore time
+     today = datetime.now(ZoneInfo("Asia/Singapore")).strftime("%Y%m%d")
+     fname = f"{company}_{today}.xlsx"
 
     # 5) Serve download
     st.download_button(
