@@ -258,7 +258,7 @@ if uploaded:
     # 2) Capture whatever’s in cell C2 (excel row 2, column C → pandas row 0, col 2)
     company_cell = raw_df.iloc[0, 2]
     company = (
-        str(company_cell).strip().replace(" ", "_")
+        str(company_cell).strip()
         if pd.notna(company_cell) and str(company_cell).strip()
         else "VisitorList"
     )
@@ -268,7 +268,7 @@ if uploaded:
     out_buf = generate_visitor_only(cleaned)
 
     # 4) Build filename: CompanyName_YYYYMMDD.xlsx
-    today = datetime.now(ZoneInfo("Asia/Singapore")).strftime("%Y%m%d")
+    today = datetime.now().strftime("%Y%m%d")
     fname = f"{company}_{today}.xlsx"
 
     # 5) Serve download
@@ -278,4 +278,3 @@ if uploaded:
         file_name=fname,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
