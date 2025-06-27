@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
-from datetime import datetime, date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
 
@@ -267,7 +268,7 @@ if uploaded:
     out_buf = generate_visitor_only(cleaned)
 
     # 4) Build filename: CompanyName_YYYYMMDD.xlsx
-    today = date.today().strftime("%Y%m%d")
+    today = datetime.now(ZoneInfo("Asia/Singapore")).strftime("%Y%m%d")
     fname = f"{company}_{today}.xlsx"
 
     # 5) Serve download
