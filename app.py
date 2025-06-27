@@ -254,7 +254,18 @@ if uploaded:
     raw_df  = pd.read_excel(uploaded, sheet_name="Visitor List")
     cleaned = clean_data(raw_df)
     out_buf = generate_visitor_only(cleaned)
-    fname   = f"Cleaned_VisitorList_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+
+    # derive a safe company identifier (or default)
+    companies = cleaned["Company Full Name"].dropna().unique()
+    if len(companies) == 1:
+        company = companies[0].strip().replace(" ", "_")
+    else:
+        company = "VisitorList"
+
+    # build filename: CompanyName_YYYYMMDD.xlsx
+    today = datetime.now().strftime("%Y%m%d")
+    fname  = f"{company}_{today}.xlsx"
+
     st.download_button(
         label="📥 Download Cleaned Visitor List Only",
         data=out_buf.getvalue(),
