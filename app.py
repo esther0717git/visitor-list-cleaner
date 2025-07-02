@@ -255,7 +255,7 @@ if uploaded:
     # 1) Read the "Visitor List" sheet
     raw_df = pd.read_excel(uploaded, sheet_name="Visitor List")
 
-    # 2) Capture whatever’s in cell C2 (excel row 2, column C → pandas row 0, col 2)
+    # 2) Capture Company Name in cell C2 (excel row 2, column C → pandas row 0, col 2)
     company_cell = raw_df.iloc[0, 2]
     company = (
         str(company_cell).strip()
