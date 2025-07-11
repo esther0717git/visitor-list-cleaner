@@ -278,34 +278,3 @@ if uploaded:
         file_name=fname,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
-# … your existing imports and setup …
-
-st.title("🇸🇬 CLARITY GATE - VISITOR DATA CLEANING & VALIDATION 🫧")
-
-# ───── Delivery Estimate ─────────────────────────────────────────────────────
-st.markdown("### 📦 Estimate Clearance Date")
-now = datetime.now(ZoneInfo("Asia/Singapore"))
-st.write(f"**Today is:** {now.strftime('%Y-%m-%d %H:%M:%S')}")
-
-if st.button("▶️ Calculate Estimated Delivery"):
-    # determine “submission” date
-    sub_date = now.date()
-    # if after 3 PM, treat as next day
-    if now.hour >= 15:
-        sub_date += timedelta(days=1)
-
-    # add two _working_ days
-    days_added = 0
-    current = sub_date
-    while days_added < 2:
-        current += timedelta(days=1)
-        # Mon–Fri are weekday() 0–4
-        if current.weekday() < 5:
-            days_added += 1
-
-    st.success(f"✓ Earliest clearance: **{current.strftime('%Y-%m-%d')}**")
-    st.info(
-        f"- Submitted on: {sub_date.strftime('%Y-%m-%d')}\n"
-        f"- 2 working days → {current.strftime('%Y-%m-%d')}"
-    )
