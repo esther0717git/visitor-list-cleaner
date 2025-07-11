@@ -9,18 +9,30 @@ from openpyxl.utils import get_column_letter
 
 # ───── Streamlit setup ────────────────────────────────────────────────────────
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
-st.title("🇸🇬 CLARITY GATE - VISITOR DATA CLEANING & VALIDATION 🫧")
+st.title("🇸🇬 CLARITY GATE – VISITOR DATA CLEANING & VALIDATION 🫧")
 
-# ───── Download Sample Template ───────────────────────────────────────────────
-with open("sample_template.xlsx", "rb") as f:
-    st.download_button(
-        label="📎 Download Sample Template",
-        data=f,
-        file_name="sample_template.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+# ───── 1) Info Banner: Data Integrity Foundation ───────────────────────────────
+st.info(
+    """
+    **Data Integrity Is Our Foundation**  
+    At every step—from file upload to final report—we enforce strict validation to guarantee your visitor data is accurate, complete, and compliant.  
+    Maintaining integrity not only expedites gate clearance, it protects our facilities and ensures we meet all regulatory requirements.
+    """
+)
+
+# ───── 2) Dedicated “Why Data Integrity?” Section ─────────────────────────────
+with st.expander("Why is Data Integrity Important?"):
+    st.write(
+        """
+        - **Accuracy**: Correct visitor details reduce clearance delays.  
+        - **Security**: Reliable ID checks prevent unauthorized access.  
+        - **Compliance**: Audit-ready records ensure regulatory adherence.  
+        - **Efficiency**: Trustworthy data powers faster reporting and analytics.
+        """
     )
 
-# ───── Upload Your Excel ──────────────────────────────────────────────────────
+# ───── 3) Inline Callout Above Uploader ───────────────────────────────────────
+st.markdown("### ⚠️ **Please ensure your spreadsheet has no missing or malformed fields.**")
 uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 
 # ───── Estimate Clearance Date (below uploader) ──────────────────────────────
@@ -81,8 +93,6 @@ def clean_gender(g):
     if v in ("MALE","FEMALE"): return v.title()
     return v
 
-# ───── Core Cleaning Logic ────────────────────────────────────────────────────
-
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.iloc[:, :13]
     df.columns = [
@@ -142,8 +152,6 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df["Gender"] = df["Gender"].apply(clean_gender)
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
     return df
-
-# ───── Build & style the Excel ────────────────────────────────────────────────
 
 def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf = BytesIO()
@@ -241,3 +249,9 @@ if uploaded:
         file_name=fname,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+    # ───── 4) Footer Reminder After Download ─────────────────────────────────
+    st.caption(
+        "✅ Your data has been validated. Please double-check critical fields before sharing with security teams."
+    )
+
