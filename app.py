@@ -30,21 +30,26 @@ st.markdown("### 📦 Estimate Clearance Date")
 st.write(f"**Today is:** {formatted_now}")
 
 if st.button("▶️ Calculate Estimated Delivery"):
-    # Determine “submission” date (bump to next day if 3PM or later)
+    # 1) Determine submission date (bump if 3 PM+)
     sub_date = now.date()
     if now.hour >= 15:
         sub_date += timedelta(days=1)
 
-    # Add two working days (skip weekends)
+    # 2) Count two working days, skipping weekends
     days_added = 0
     current = sub_date
     while days_added < 2:
         current += timedelta(days=1)
-        if current.weekday() < 5:  # Mon–Fri are 0–4
+        if current.weekday() < 5:  # Mon=0 … Fri=4
             days_added += 1
 
-    st.success(f"✓ Earliest clearance: **{current.strftime('%Y-%m-%d')}**")
-    # <-- removed the st.info(...) blue box here
+    # 3) Clearance = the day *after* the 2nd working day
+    clearance_date = current + timedelta(days=1)
+    #    and if that lands on Sat/Sun, push to Monday
+    while clearance_date.weekday() >= 5:
+        clearance_date += timedelta(days=1)
+
+    st.success(f"✓ Earliest clearance: **{clearance_date.strftime('%Y-%m-%d')}**")
 
 # ───── Helper functions ────────────────────────────────────────────────────────
 
@@ -53,7 +58,7 @@ def nationality_group(row):
     pr  = str(row["PR"]).strip().lower()
     if nat == "singapore":
         return 1
-    elif pr in ("yes", "y", "pr"):
+    elif pr in ("yes","y","pr"):
         return 2
     elif nat == "malaysia":
         return 3
@@ -71,13 +76,12 @@ def split_name(full_name):
 
 def clean_gender(g):
     v = str(g).strip().upper()
-    if v == "M":
-        return "Male"
-    if v == "F":
-        return "Female"
-    if v in ("MALE","FEMALE"):
-        return v.title()
+    if v == "M": return "Male"
+    if v == "F": return "Female"
+    if v in ("MALE","FEMALE"): return v.title()
     return v
+
+# ───── Core Cleaning Logic ────────────────────────────────────────────────────
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.iloc[:, :13]
@@ -97,7 +101,8 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     df["SortGroup"] = df.apply(nationality_group, axis=1)
-    df = (df.sort_values(
+    df = (
+        df.sort_values(
             ["Company Full Name","SortGroup","Nationality (Country Name)","Full Name As Per NRIC"],
             ignore_index=True
         )
@@ -119,7 +124,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         df["Full Name As Per NRIC"].apply(split_name)
     )
 
-    iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
+    iccol, wpcol = "IC (Last 3 digits and suffix) 123A","Work Permit Expiry Date"
     if df[iccol].astype(str).str.contains("-", na=False).any():
         df[[iccol, wpcol]] = df[[wpcol, iccol]]
     df[iccol] = df[iccol].astype(str).str[-4:]
@@ -128,19 +133,17 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         d = re.sub(r"\D", "", str(x))
         if len(d) > 8:
             extra = len(d) - 8
-            if d.endswith("0"*extra):
-                d = d[:-extra]
-            else:
-                d = d[-8:]
-        if len(d) < 8:
-            d = d.zfill(8)
+            if d.endswith("0"*extra): d = d[:-extra]
+            else: d = d[-8:]
+        if len(d) < 8: d = d.zfill(8)
         return d
 
     df["Mobile Number"] = df["Mobile Number"].apply(fix_mobile)
     df["Gender"] = df["Gender"].apply(clean_gender)
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
-
     return df
+
+# ───── Build & style the Excel ────────────────────────────────────────────────
 
 def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf = BytesIO()
@@ -175,12 +178,9 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             pr  = str(ws[f"K{r}"].value).strip().lower()
             bad = False
 
-            if idt != "NRIC" and pr in ("yes","y","pr"):
-                bad = True
-            if idt == "FIN" and (nat == "Singapore" or pr in ("yes","y","pr")):
-                bad = True
-            if idt == "NRIC" and not (nat == "Singapore" or pr in ("yes","y","pr")):
-                bad = True
+            if idt != "NRIC" and pr in ("yes","y","pr"): bad = True
+            if idt == "FIN" and (nat=="Singapore" or pr in ("yes","y","pr")): bad = True
+            if idt == "NRIC" and not (nat=="Singapore" or pr in ("yes","y","pr")): bad = True
 
             if bad:
                 for c in ("G","J","K"):
@@ -219,6 +219,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf.seek(0)
     return buf
 
+# ───── Read, Clean & Download ────────────────────────────────────────────────
 if uploaded:
     raw_df = pd.read_excel(uploaded, sheet_name="Visitor List")
     company_cell = raw_df.iloc[0, 2]
