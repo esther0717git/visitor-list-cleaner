@@ -61,7 +61,9 @@ if st.button("▶️ Calculate Estimated Delivery"):
     while clearance_date.weekday() >= 5:
         clearance_date += timedelta(days=1)
 
-    st.success(f"✓ Earliest clearance: **{clearance_date.strftime('%Y-%m-%d')}**")
+    # Format as "Sunday 13 July" (no leading zero on day)
+    formatted_clearance = f"{clearance_date:%A} {clearance_date.day} {clearance_date:%B}"
+    st.success(f"✓ Earliest clearance: **{formatted_clearance}**")
 
 # ───── Helper functions ────────────────────────────────────────────────────────
 
@@ -254,4 +256,3 @@ if uploaded:
     st.caption(
         "✅ Your data has been validated. Please double-check critical fields before sharing with security teams."
     )
-
