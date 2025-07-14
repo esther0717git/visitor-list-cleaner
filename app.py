@@ -11,7 +11,7 @@ from openpyxl.utils import get_column_letter
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
 st.title("🇸🇬 CLARITY GATE – VISITOR DATA CLEANING & VALIDATION 🫧")
 
-# ───── 1) Info Banner: Data Integrity Foundation ───────────────────────────────
+# ───── 1) Info Banner ──────────────────────────────────────────────────────────
 st.info(
     """
     **Data Integrity Is Our Foundation**  
@@ -20,7 +20,7 @@ st.info(
     """
 )
 
-# ───── 2) Dedicated “Why Data Integrity?” Section ─────────────────────────────
+# ───── 2) Why Data Integrity? ───────────────────────────────────────────────────
 with st.expander("Why is Data Integrity Important?"):
     st.write(
         """
@@ -31,42 +31,33 @@ with st.expander("Why is Data Integrity Important?"):
         """
     )
 
-# ───── 3) Inline Callout Above Uploader ───────────────────────────────────────
+# ───── 3) Uploader & Warning ───────────────────────────────────────────────────
 st.markdown("### ⚠️ **Please ensure your spreadsheet has no missing or malformed fields.**")
 uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 
-# ───── Estimate Clearance Date (below uploader) ──────────────────────────────
+# ───── 4) Estimate Clearance Date ───────────────────────────────────────────────
 now = datetime.now(ZoneInfo("Asia/Singapore"))
 formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
 st.markdown("### 📦 Estimate Clearance Date")
 st.write(f"**Today is:** {formatted_now}")
 
 if st.button("▶️ Calculate Estimated Delivery"):
-    # 1) Determine submission date (bump if 3 PM+)
     sub_date = now.date()
     if now.hour >= 15:
         sub_date += timedelta(days=1)
-
-    # 2) Count two working days, skipping weekends
     days_added = 0
     current = sub_date
     while days_added < 2:
         current += timedelta(days=1)
-        if current.weekday() < 5:  # Mon=0 … Fri=4
+        if current.weekday() < 5:
             days_added += 1
-
-    # 3) Clearance = the day *after* the 2nd working day
     clearance_date = current + timedelta(days=1)
-    #    and if that lands on Sat/Sun, push to Monday
     while clearance_date.weekday() >= 5:
         clearance_date += timedelta(days=1)
-
-    # Format as "Sunday 13 July" (no leading zero on day)
     formatted_clearance = f"{clearance_date:%A} {clearance_date.day} {clearance_date:%B}"
     st.success(f"✓ Earliest clearance: **{formatted_clearance}**")
 
-# ───── Helper functions ────────────────────────────────────────────────────────
-
+# ───── Helper Functions ────────────────────────────────────────────────────────
 def nationality_group(row):
     nat = str(row["Nationality (Country Name)"]).strip().lower()
     pr  = str(row["PR"]).strip().lower()
@@ -105,13 +96,23 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     ]
     df = df.dropna(subset=df.columns[3:13], how="all")
 
+    # Normalize Company Full Name
+    df["Company Full Name"] = (
+        df["Company Full Name"]
+          .astype(str)
+          .str.replace(r"\bPTE\s+LTD\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
+    )
+
+    # Standardize Nationality
     nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","indian":"India"}
     df["Nationality (Country Name)"] = (
         df["Nationality (Country Name)"]
           .astype(str).str.strip().str.lower()
-          .replace(nat_map, regex=False).str.title()
+          .replace(nat_map, regex=False)
+          .str.title()
     )
 
+    # Sort & S/N
     df["SortGroup"] = df.apply(nationality_group, axis=1)
     df = (
         df.sort_values(
@@ -122,25 +123,48 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     )
     df["S/N"] = range(1, len(df) + 1)
 
+    # Normalize PR
+    df["PR"] = (
+        df["PR"]
+          .astype(str).str.strip().str.lower()
+          .apply(lambda v:
+              "PR" if v in ("yes","y") else
+              "N"  if v in ("n","no","na") else
+              ""   if v in ("","nan") else
+              v.title()
+          )
+    )
+
+    # Normalize Identification Type
+    df["Identification Type"] = (
+        df["Identification Type"]
+          .astype(str).str.strip()
+          .apply(lambda v: "FIN" if v.lower() == "fin" else v)
+    )
+
+    # Vehicle Plate formatting
     df["Vehicle Plate Number"] = (
         df["Vehicle Plate Number"]
           .astype(str)
           .str.replace(r"[\/,]", ";", regex=True)
           .str.replace(r"\s*;\s*", ";", regex=True)
-          .str.strip()
+          .str.replace(r"\s+", "", regex=True)
           .replace("nan","", regex=False)
     )
 
+    # Split name
     df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
     df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
         df["Full Name As Per NRIC"].apply(split_name)
     )
 
-    iccol, wpcol = "IC (Last 3 digits and suffix) 123A","Work Permit Expiry Date"
+    # Swap IC/WP if needed
+    iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
     if df[iccol].astype(str).str.contains("-", na=False).any():
         df[[iccol, wpcol]] = df[[wpcol, iccol]]
     df[iccol] = df[iccol].astype(str).str[-4:]
 
+    # Mobile cleanup
     def fix_mobile(x):
         d = re.sub(r"\D", "", str(x))
         if len(d) > 8:
@@ -149,10 +173,14 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
             else: d = d[-8:]
         if len(d) < 8: d = d.zfill(8)
         return d
-
     df["Mobile Number"] = df["Mobile Number"].apply(fix_mobile)
+
+    # Gender cleanup
     df["Gender"] = df["Gender"].apply(clean_gender)
+
+    # WP date formatting
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
+
     return df
 
 def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
@@ -163,22 +191,23 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
 
         header_fill  = PatternFill("solid", fgColor="94B455")
         warning_fill = PatternFill("solid", fgColor="FFCCCC")
-        border       = Border(Side("thin"),Side("thin"),Side("thin"),Side("thin"))
+        border       = Border(*[Side("thin")]*4)
         center       = Alignment("center","center")
         normal_font  = Font(name="Calibri", size=9)
         bold_font    = Font(name="Calibri", size=9, bold=True)
 
+        # Style cells
         for row in ws.iter_rows():
             for cell in row:
                 cell.border    = border
                 cell.alignment = center
                 cell.font      = normal_font
 
+        # Header
         for col in range(1, ws.max_column + 1):
             h = ws[f"{get_column_letter(col)}1"]
             h.fill = header_fill
             h.font = bold_font
-
         ws.freeze_panes = ws["A2"]
 
         errors = 0
@@ -186,26 +215,39 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             idt = str(ws[f"G{r}"].value).strip().upper()
             nat = str(ws[f"J{r}"].value).strip().title()
             pr  = str(ws[f"K{r}"].value).strip().lower()
-            bad = False
+            wpd = str(ws[f"I{r}"].value).strip()
 
-            if idt != "NRIC" and pr in ("yes","y","pr"): bad = True
-            if idt == "FIN" and (nat=="Singapore" or pr in ("yes","y","pr")): bad = True
-            if idt == "NRIC" and not (nat=="Singapore" or pr in ("yes","y","pr")): bad = True
+            bad = False
+            if idt != "NRIC" and pr in ("pr",): bad = True
+            if idt == "FIN" and (nat == "Singapore" or pr in ("pr",)): bad = True
+            if idt == "NRIC" and not (nat == "Singapore" or pr in ("pr",)): bad = True
 
             if bad:
-                for c in ("G","J","K"):
-                    ws[f"{c}{r}"].fill = warning_fill
+                for col in ("G","J","K"):
+                    ws[f"{col}{r}"].fill = warning_fill
+                errors += 1
+
+            if idt == "FIN" and not wpd:
+                ws[f"I{r}"].fill = warning_fill
                 errors += 1
 
         if errors:
             st.warning(f"⚠️ {errors} validation error(s) found.")
 
-        for col in ws.columns:
-            w = max(len(str(cell.value)) for cell in col if cell.value)
-            ws.column_dimensions[get_column_letter(col[0].column)].width = w + 2
+        # Set row height
         for row in ws.iter_rows():
-            ws.row_dimensions[row[0].row].height = 20
+            ws.row_dimensions[row[0].row].height = 16.8
 
+        # Auto-fit column widths
+        for column_cells in ws.columns:
+            max_length = max(
+                len(str(cell.value)) if cell.value not in (None, "") else 0
+                for cell in column_cells
+            )
+            letter = get_column_letter(column_cells[0].column)
+            ws.column_dimensions[letter].width = max_length + 2
+
+        # Vehicles summary (font size 9)
         plates = []
         for v in df["Vehicle Plate Number"].dropna():
             plates += [x.strip() for x in str(v).split(";") if x.strip()]
@@ -214,17 +256,22 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             ws[f"B{ins}"].value     = "Vehicles"
             ws[f"B{ins}"].border    = border
             ws[f"B{ins}"].alignment = center
+            ws[f"B{ins}"].font      = normal_font
             ws[f"B{ins+1}"].value   = ";".join(sorted(set(plates)))
             ws[f"B{ins+1}"].border  = border
             ws[f"B{ins+1}"].alignment = center
+            ws[f"B{ins+1}"].font    = normal_font
             ins += 2
 
+        # Total visitors summary (font size 9)
         ws[f"B{ins}"].value     = "Total Visitors"
         ws[f"B{ins}"].border    = border
         ws[f"B{ins}"].alignment = center
+        ws[f"B{ins}"].font      = normal_font
         ws[f"B{ins+1}"].value   = df["Company Full Name"].notna().sum()
         ws[f"B{ins+1}"].border  = border
         ws[f"B{ins+1}"].alignment = center
+        ws[f"B{ins+1}"].font    = normal_font
 
     buf.seek(0)
     return buf
@@ -252,7 +299,6 @@ if uploaded:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
-    # ───── 4) Footer Reminder After Download ─────────────────────────────────
     st.caption(
         "✅ Your data has been validated. Please double-check critical fields before sharing with security teams."
     )
