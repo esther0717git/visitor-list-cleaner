@@ -203,7 +203,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             h = ws[f"{get_column_letter(col)}1"]
             h.fill = header_fill
             h.font = bold_font
-        ws.freeze_panes = ws["A2"]
+        ws.freeze_panes = "B2"
 
         errors = 0
         for r in range(2, ws.max_row + 1):
