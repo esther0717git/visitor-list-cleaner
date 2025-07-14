@@ -42,22 +42,30 @@ st.markdown("### 📦 Estimate Clearance Date")
 st.write(f"**Today is:** {formatted_now}")
 
 if st.button("▶️ Calculate Estimated Delivery"):
-    sub_date = now.date()
-    if now.hour >= 15:
-        sub_date += timedelta(days=1)
-    days_added = 0
-    current = sub_date
-    while days_added < 2:
-        current += timedelta(days=1)
-        if current.weekday() < 5:
-            days_added += 1
-    clearance_date = current + timedelta(days=1)
+    if now.time() >= datetime.strptime("15:00", "%H:%M").time():
+        effective_submission_date = now.date() + timedelta(days=1)
+    else:
+        effective_submission_date = now.date()
+
+    while effective_submission_date.weekday() >= 5:
+        effective_submission_date += timedelta(days=1)
+
+    working_days_count = 0
+    estimated_date = effective_submission_date
+    while working_days_count < 2:
+        estimated_date += timedelta(days=1)
+        if estimated_date.weekday() < 5:
+            working_days_count += 1
+
+    clearance_date = estimated_date
     while clearance_date.weekday() >= 5:
         clearance_date += timedelta(days=1)
-    formatted_clearance = f"{clearance_date:%A} {clearance_date.day} {clearance_date:%B}"
-    st.success(f"✓ Earliest clearance: **{formatted_clearance}**")
+
+    formatted = f"{clearance_date:%A} {clearance_date.day} {clearance_date:%B}"
+    st.success(f"✓ Earliest clearance: **{formatted}**")
 
 # ───── Helper Functions ────────────────────────────────────────────────────────
+
 def nationality_group(row):
     nat = str(row["Nationality (Country Name)"]).strip().lower()
     pr  = str(row["PR"]).strip().lower()
@@ -86,6 +94,15 @@ def clean_gender(g):
     if v in ("MALE","FEMALE"): return v.title()
     return v
 
+def normalize_pr(value):
+    val = str(value).strip().lower()
+    if val in ("pr", "yes", "y"):
+        return "PR"
+    elif val in ("n", "no", "na", "", "nan"):
+        return ""
+    else:
+        return val.upper() if val.isalpha() else val
+
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.iloc[:, :13]
     df.columns = [
@@ -96,14 +113,12 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     ]
     df = df.dropna(subset=df.columns[3:13], how="all")
 
-    # Normalize Company Full Name
     df["Company Full Name"] = (
         df["Company Full Name"]
           .astype(str)
           .str.replace(r"\bPTE\s+LTD\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
     )
 
-    # Standardize Nationality
     nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","indian":"India"}
     df["Nationality (Country Name)"] = (
         df["Nationality (Country Name)"]
@@ -112,7 +127,6 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .str.title()
     )
 
-    # Sort & S/N
     df["SortGroup"] = df.apply(nationality_group, axis=1)
     df = (
         df.sort_values(
@@ -123,26 +137,15 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     )
     df["S/N"] = range(1, len(df) + 1)
 
-    # Normalize PR
-    df["PR"] = (
-        df["PR"]
-          .astype(str).str.strip().str.lower()
-          .apply(lambda v:
-              "PR" if v in ("yes","y") else
-              "N"  if v in ("n","no","na") else
-              ""   if v in ("","nan") else
-              v.title()
-          )
-    )
+    # 🔄 Apply updated PR normalization
+    df["PR"] = df["PR"].apply(normalize_pr)
 
-    # Normalize Identification Type
     df["Identification Type"] = (
         df["Identification Type"]
           .astype(str).str.strip()
-          .apply(lambda v: "FIN" if v.lower() == "fin" else v)
+          .apply(lambda v: "FIN" if v.lower() == "fin" else v.upper())
     )
 
-    # Vehicle Plate formatting
     df["Vehicle Plate Number"] = (
         df["Vehicle Plate Number"]
           .astype(str)
@@ -152,19 +155,16 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .replace("nan","", regex=False)
     )
 
-    # Split name
     df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
     df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
         df["Full Name As Per NRIC"].apply(split_name)
     )
 
-    # Swap IC/WP if needed
     iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
     if df[iccol].astype(str).str.contains("-", na=False).any():
         df[[iccol, wpcol]] = df[[wpcol, iccol]]
     df[iccol] = df[iccol].astype(str).str[-4:]
 
-    # Mobile cleanup
     def fix_mobile(x):
         d = re.sub(r"\D", "", str(x))
         if len(d) > 8:
@@ -175,10 +175,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         return d
     df["Mobile Number"] = df["Mobile Number"].apply(fix_mobile)
 
-    # Gender cleanup
     df["Gender"] = df["Gender"].apply(clean_gender)
-
-    # WP date formatting
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
 
     return df
@@ -190,20 +187,18 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         ws = writer.sheets["Visitor List"]
 
         header_fill  = PatternFill("solid", fgColor="94B455")
-        warning_fill = PatternFill("solid", fgColor="FFCCCC")
+        warning_fill = PatternFill("solid", fgColor="DA9694")
         border       = Border(*[Side("thin")]*4)
         center       = Alignment("center","center")
         normal_font  = Font(name="Calibri", size=9)
         bold_font    = Font(name="Calibri", size=9, bold=True)
 
-        # Style cells
         for row in ws.iter_rows():
             for cell in row:
-                cell.border    = border
+                cell.border = border
                 cell.alignment = center
-                cell.font      = normal_font
+                cell.font = normal_font
 
-        # Header
         for col in range(1, ws.max_column + 1):
             h = ws[f"{get_column_letter(col)}1"]
             h.fill = header_fill
@@ -218,9 +213,9 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             wpd = str(ws[f"I{r}"].value).strip()
 
             bad = False
-            if idt != "NRIC" and pr in ("pr",): bad = True
-            if idt == "FIN" and (nat == "Singapore" or pr in ("pr",)): bad = True
-            if idt == "NRIC" and not (nat == "Singapore" or pr in ("pr",)): bad = True
+            if idt != "NRIC" and pr == "pr": bad = True
+            if idt == "FIN" and (nat == "Singapore" or pr == "pr"): bad = True
+            if idt == "NRIC" and not (nat == "Singapore" or pr == "pr"): bad = True
 
             if bad:
                 for col in ("G","J","K"):
@@ -234,44 +229,58 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         if errors:
             st.warning(f"⚠️ {errors} validation error(s) found.")
 
-        # Set row height
+        # Set fixed column widths
+        column_widths = {
+            "A": 3.38,
+            "C": 23.06,
+            "D": 17.25,
+            "E": 17.63,
+            "F": 26.25,
+            "G": 13.94,
+            "H": 24.06,
+            "I": 18.38,
+            "J": 20.31,
+            "K": 4,
+            "L": 5.81,
+            "M": 11.5,
+        }
+        # B is dynamic (auto-fit based on max content)
+        for col in ws.columns:
+            col_letter = get_column_letter(col[0].column)
+            if col_letter == "B":
+                width = max(len(str(cell.value)) for cell in col if cell.value)
+                ws.column_dimensions[col_letter].width = width
+            elif col_letter in column_widths:
+                ws.column_dimensions[col_letter].width = column_widths[col_letter]
+        
         for row in ws.iter_rows():
             ws.row_dimensions[row[0].row].height = 16.8
 
-        # Auto-fit column widths
-        for column_cells in ws.columns:
-            max_length = max(
-                len(str(cell.value)) if cell.value not in (None, "") else 0
-                for cell in column_cells
-            )
-            letter = get_column_letter(column_cells[0].column)
-            ws.column_dimensions[letter].width = max_length + 2
-
-        # Vehicles summary (font size 9)
         plates = []
         for v in df["Vehicle Plate Number"].dropna():
             plates += [x.strip() for x in str(v).split(";") if x.strip()]
         ins = ws.max_row + 2
         if plates:
-            ws[f"B{ins}"].value     = "Vehicles"
-            ws[f"B{ins}"].border    = border
+            ws[f"B{ins}"].value = "Vehicles"
+            ws[f"B{ins}"].font = Font(size=9)
+            ws[f"B{ins}"].border = border
             ws[f"B{ins}"].alignment = center
-            ws[f"B{ins}"].font      = normal_font
-            ws[f"B{ins+1}"].value   = ";".join(sorted(set(plates)))
-            ws[f"B{ins+1}"].border  = border
+
+            ws[f"B{ins+1}"].value = ";".join(sorted(set(plates)))
+            ws[f"B{ins+1}"].font = Font(size=9)
+            ws[f"B{ins+1}"].border = border
             ws[f"B{ins+1}"].alignment = center
-            ws[f"B{ins+1}"].font    = normal_font
             ins += 2
 
-        # Total visitors summary (font size 9)
-        ws[f"B{ins}"].value     = "Total Visitors"
-        ws[f"B{ins}"].border    = border
+        ws[f"B{ins}"].value = "Total Visitors"
+        ws[f"B{ins}"].font = Font(size=9)
+        ws[f"B{ins}"].border = border
         ws[f"B{ins}"].alignment = center
-        ws[f"B{ins}"].font      = normal_font
-        ws[f"B{ins+1}"].value   = df["Company Full Name"].notna().sum()
-        ws[f"B{ins+1}"].border  = border
+
+        ws[f"B{ins+1}"].value = df["Company Full Name"].notna().sum()
+        ws[f"B{ins+1}"].font = Font(size=9)
+        ws[f"B{ins+1}"].border = border
         ws[f"B{ins+1}"].alignment = center
-        ws[f"B{ins+1}"].font    = normal_font
 
     buf.seek(0)
     return buf
