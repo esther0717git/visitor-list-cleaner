@@ -54,7 +54,7 @@ st.markdown("### 📦 Estimate Clearance Date")
 
 # highlight the timestamp in yellow:
 st.markdown(
-    f"**Today is:** <span style='background-color: #bf9000; padding:2px 4px; border-radius:2px'>{formatted_now}</span>",
+    f"**Today is:** <span style='background-color: #ffe599; padding:2px 4px; border-radius:2px'>{formatted_now}</span>",
     unsafe_allow_html=True
 )
 
