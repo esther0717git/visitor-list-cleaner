@@ -16,7 +16,7 @@ st.title("🇸🇬 CLARITY GATE – VISITOR DATA CLEANING & VALIDATION 🫧")
 with open("sample_template.xlsx", "rb") as f:
     sample_bytes = f.read()
 st.download_button(
-    label="⭐️ Download Sample Template",
+    label="🌟 Download Sample Template",
     data=sample_bytes,
     file_name="sample_template.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
