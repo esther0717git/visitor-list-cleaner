@@ -361,8 +361,7 @@ if uploaded:
     # ───── 5) Final Notice ─────────────────────────────────────────────────────
     st.markdown(
         """
-        **We will do our utmost to deliver your access ticket 1 day before your scheduled entry.**  
-        Kindly ensure that approved access clearance codes are obtained before planning or commencing any work activities in the data center.
+        We will do our utmost to deliver your access ticket 1 day before your scheduled entry.Kindly ensure that approved access clearance codes are obtained before planning or commencing any work activities in the data center.
 
         Please be reminded to go through the Clarity Gate prior to submission, and ensure that all visitor and shipment details are complete and accurate to prevent rescheduling due to clarification.
 
