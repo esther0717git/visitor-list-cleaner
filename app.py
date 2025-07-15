@@ -11,6 +11,18 @@ from openpyxl.utils import get_column_letter
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
 st.title("🇸🇬 CLARITY GATE – VISITOR DATA CLEANING & VALIDATION 🫧")
 
+# ───── Download Sample Template ────────────────────────────────────────────────
+# This reads the Excel you committed as sample_template.xlsx in your repo root
+with open("sample_template.xlsx", "rb") as f:
+    sample_bytes = f.read()
+st.download_button(
+    label="📄 Download Sample Template",
+    data=sample_bytes,
+    file_name="sample_template.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+)
+
+
 # ───── 1) Info Banner ──────────────────────────────────────────────────────────
 st.info(
     """
@@ -104,6 +116,7 @@ def normalize_pr(value):
         return val.upper() if val.isalpha() else val
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    # keep first 13 cols & rename
     df = df.iloc[:, :13]
     df.columns = [
         "S/N","Vehicle Plate Number","Company Full Name","Full Name As Per NRIC",
@@ -113,12 +126,14 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     ]
     df = df.dropna(subset=df.columns[3:13], how="all")
 
+    # normalize company
     df["Company Full Name"] = (
         df["Company Full Name"]
           .astype(str)
           .str.replace(r"\bPTE\s+LTD\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
     )
 
+    # standardize nationality
     nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","indian":"India"}
     df["Nationality (Country Name)"] = (
         df["Nationality (Country Name)"]
@@ -127,6 +142,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .str.title()
     )
 
+    # sort & serial
     df["SortGroup"] = df.apply(nationality_group, axis=1)
     df = (
         df.sort_values(
@@ -140,12 +156,14 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # 🔄 Apply updated PR normalization
     df["PR"] = df["PR"].apply(normalize_pr)
 
+    # normalize ID type
     df["Identification Type"] = (
         df["Identification Type"]
           .astype(str).str.strip()
           .apply(lambda v: "FIN" if v.lower() == "fin" else v.upper())
     )
 
+    # vehicle plates
     df["Vehicle Plate Number"] = (
         df["Vehicle Plate Number"]
           .astype(str)
@@ -155,16 +173,19 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .replace("nan","", regex=False)
     )
 
+    # split names
     df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
     df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
         df["Full Name As Per NRIC"].apply(split_name)
     )
 
+    # swap IC/WP if needed
     iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
     if df[iccol].astype(str).str.contains("-", na=False).any():
         df[[iccol, wpcol]] = df[[wpcol, iccol]]
     df[iccol] = df[iccol].astype(str).str[-4:]
 
+    # clean mobile
     def fix_mobile(x):
         d = re.sub(r"\D", "", str(x))
         if len(d) > 8:
@@ -193,18 +214,21 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         normal_font  = Font(name="Calibri", size=9)
         bold_font    = Font(name="Calibri", size=9, bold=True)
 
+        # style all cells
         for row in ws.iter_rows():
             for cell in row:
                 cell.border = border
                 cell.alignment = center
                 cell.font = normal_font
 
+      # header row
         for col in range(1, ws.max_column + 1):
             h = ws[f"{get_column_letter(col)}1"]
             h.fill = header_fill
             h.font = bold_font
         ws.freeze_panes = "B2"
 
+  
         errors = 0
         for r in range(2, ws.max_row + 1):
             idt = str(ws[f"G{r}"].value).strip().upper()
@@ -225,6 +249,15 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             if idt == "FIN" and not wpd:
                 ws[f"I{r}"].fill = warning_fill
                 errors += 1
+
+            # duplicate‐check on column D (Full Name)
+            if name:
+                if name in seen:
+                    # highlight both cells in red
+                    ws[f"D{r}"].fill = warning_fill
+                    ws[f"D{seen[name]}"].fill = warning_fill
+                else:
+                    seen[name] = r
 
         if errors:
             st.warning(f"⚠️ {errors} validation error(s) found.")
@@ -256,6 +289,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         for row in ws.iter_rows():
             ws.row_dimensions[row[0].row].height = 16.8
 
+        # vehicles summary
         plates = []
         for v in df["Vehicle Plate Number"].dropna():
             plates += [x.strip() for x in str(v).split(";") if x.strip()]
@@ -309,5 +343,5 @@ if uploaded:
     )
 
     st.caption(
-        "✅ Your data has been validated. Please double-check critical fields before sharing with security teams."
+        "✅ Your data has been validated. Please double-check critical fields before sharing with DC team."
     )
