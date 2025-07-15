@@ -205,7 +205,6 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
 
     return df
-
 def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
@@ -222,50 +221,52 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         # style all cells
         for row in ws.iter_rows():
             for cell in row:
-                cell.border = border
+                cell.border    = border
                 cell.alignment = center
-                cell.font = normal_font
+                cell.font      = normal_font
 
-      # header row
+        # header row
         for col in range(1, ws.max_column + 1):
             h = ws[f"{get_column_letter(col)}1"]
             h.fill = header_fill
             h.font = bold_font
         ws.freeze_panes = "B2"
 
-  
         errors = 0
+        seen = {}                    # ← initialize duplicate‐tracker
+
         for r in range(2, ws.max_row + 1):
+            # pull values
             idt = str(ws[f"G{r}"].value).strip().upper()
             nat = str(ws[f"J{r}"].value).strip().title()
             pr  = str(ws[f"K{r}"].value).strip().lower()
             wpd = str(ws[f"I{r}"].value).strip()
+            name = str(ws[f"D{r}"].value or "").strip()   # ← grab “Full Name” from col D
 
             bad = False
             if idt != "NRIC" and pr == "pr": bad = True
             if idt == "FIN" and (nat == "Singapore" or pr == "pr"): bad = True
             if idt == "NRIC" and not (nat == "Singapore" or pr == "pr"): bad = True
+            if idt == "FIN" and not wpd: bad = True
 
             if bad:
-                for col in ("G","J","K"):
+                for col in ("G","J","K","I"):
                     ws[f"{col}{r}"].fill = warning_fill
                 errors += 1
 
-            if idt == "FIN" and not wpd:
-                ws[f"I{r}"].fill = warning_fill
-                errors += 1
-
-            # duplicate‐check on column D (Full Name)
+            # ─── duplicate‐check on column D ──────────────────────────
             if name:
                 if name in seen:
-                    # highlight both cells in red
+                    # highlight both the old row and the new row
                     ws[f"D{r}"].fill = warning_fill
                     ws[f"D{seen[name]}"].fill = warning_fill
+                    errors += 1
                 else:
                     seen[name] = r
 
         if errors:
             st.warning(f"⚠️ {errors} validation error(s) found.")
+
 
         # Set fixed column widths
         column_widths = {
