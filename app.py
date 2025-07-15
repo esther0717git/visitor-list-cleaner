@@ -363,17 +363,16 @@ if uploaded:
 # ───── 5) Final Notice (always shown) ────────────────────────────────────────
 st.markdown(
     """
-    We will do our utmost to deliver your access ticket 1 day before your scheduled entry.
-    
-    Kindly ensure that approved access clearance codes are obtained before planning or commencing any work activities in the data center.
-
-    Please be reminded to go through the Clarity Gate prior to submission, and ensure that all visitor and shipment details are complete and accurate to prevent rescheduling due to clarification.
-
-    **Note:**  
-    The Clarity Gate operates on the GOFAI system, which relies on explicitly programmed rules and logic. 
-    
-    Although its validation accuracy can reach up to 95%, we strongly recommend that you thoroughly review all information before submission.
-
-    Thank you for your cooperation.
-    """
+    <div style="line-height:1.2; font-size:14px;">
+      We will do our utmost to deliver your access ticket 1 day before your scheduled entry.<br>
+      Kindly ensure that approved access clearance codes are obtained before planning or commencing any work activities in the data center.<br>
+      Please be reminded to go through the Clarity Gate prior to submission, and ensure that all visitor and shipment details are complete and accurate to prevent rescheduling due to clarification.<br><br>
+      <strong>Note:</strong><br>
+      The Clarity Gate operates on the GOFAI system, which relies on explicitly programmed rules and logic.<br>
+      Although its validation accuracy can reach up to 95%, we strongly recommend that you thoroughly review all information before submission.<br>
+      Thank you for your cooperation.
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
+
