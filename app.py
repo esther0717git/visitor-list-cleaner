@@ -51,7 +51,12 @@ uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 now = datetime.now(ZoneInfo("Asia/Singapore"))
 formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
 st.markdown("### 📦 Estimate Clearance Date")
-st.write(f"**Today is:** {formatted_now}")
+
+# highlight the timestamp in yellow:
+st.markdown(
+    f"**Today is:** <span style='background-color: #FFFF00; padding:2px 4px; border-radius:2px'>{formatted_now}</span>",
+    unsafe_allow_html=True
+)
 
 if st.button("▶️ Calculate Estimated Delivery"):
     if now.time() >= datetime.strptime("15:00", "%H:%M").time():
