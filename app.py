@@ -244,12 +244,18 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             name = str(ws[f"D{r}"].value or "").strip()   # ← grab “Full Name” from col D
 
             bad = False
+
+            # ── NEW RULE: Singaporeans cannot be PR ────────────────────────────
+            if nat == "Singapore" and pr == "pr":
+                bad = True
+            
             if idt != "NRIC" and pr == "pr": bad = True
             if idt == "FIN" and (nat == "Singapore" or pr == "pr"): bad = True
             if idt == "NRIC" and not (nat == "Singapore" or pr == "pr"): bad = True
             if idt == "FIN" and not wpd: bad = True
 
             if bad:
+             # highlight the offending cells
                 for col in ("G","J","K","I"):
                     ws[f"{col}{r}"].fill = warning_fill
                 errors += 1
