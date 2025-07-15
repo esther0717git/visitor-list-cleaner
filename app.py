@@ -331,19 +331,6 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf.seek(0)
     return buf
 
-    # ───── 5) Final Notice ─────────────────────────────────────────────────────
-    st.markdown(
-        """
-        We will do our utmost to deliver your access ticket 1 day before your scheduled entry.Kindly ensure that approved access clearance codes are obtained before planning or commencing any work activities in the data center.
-
-        Please be reminded to go through the Clarity Gate prior to submission, and ensure that all visitor and shipment details are complete and accurate to prevent rescheduling due to clarification.
-
-        **Note:**  
-        The Clarity Gate operates on the GOFAI system, which relies on explicitly programmed rules and logic. Although its validation accuracy can reach up to 95%, we strongly recommend that you thoroughly review all information before submission.
-
-        Thank you for your cooperation.
-        """
-    )
     
 # ───── Read, Clean & Download ────────────────────────────────────────────────
 if uploaded:
@@ -372,3 +359,18 @@ if uploaded:
         "✅ Your data has been validated. Please double-check critical fields before sharing with DC team."
     )
 
+
+# ───── 5) Final Notice (always shown) ────────────────────────────────────────
+st.markdown(
+    """
+    We will do our utmost to deliver your access ticket 1 day before your scheduled entry.
+    Kindly ensure that approved access clearance codes are obtained before planning or commencing any work activities in the data center.
+
+    Please be reminded to go through the Clarity Gate prior to submission, and ensure that all visitor and shipment details are complete and accurate to prevent rescheduling due to clarification.
+
+    **Note:**  
+    The Clarity Gate operates on the GOFAI system, which relies on explicitly programmed rules and logic. Although its validation accuracy can reach up to 95%, we strongly recommend that you thoroughly review all information before submission.
+
+    Thank you for your cooperation.
+    """
+)
