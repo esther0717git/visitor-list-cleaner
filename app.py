@@ -52,9 +52,9 @@ now = datetime.now(ZoneInfo("Asia/Singapore"))
 formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
 st.markdown("### 🗓️ Estimate Clearance Date 🍍")
 
-# highlight the timestamp in yellow:
+# highlight the timestamp in grey:
 st.markdown(
-    f"**Today is:** <span style='background-color: #fff2cc; padding:2px 4px; border-radius:2px'>{formatted_now}</span>",
+    f"**Today is:** <span style='background-color: #efefef; padding:2px 4px; border-radius:2px'>{formatted_now}</span>",
     unsafe_allow_html=True
 )
 
