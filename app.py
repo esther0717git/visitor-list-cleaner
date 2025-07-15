@@ -371,6 +371,7 @@ st.markdown(
 
     **Note:**  
     The Clarity Gate operates on the GOFAI system, which relies on explicitly programmed rules and logic. 
+    
     Although its validation accuracy can reach up to 95%, we strongly recommend that you thoroughly review all information before submission.
 
     Thank you for your cooperation.
