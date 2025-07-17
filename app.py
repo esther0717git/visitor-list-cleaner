@@ -379,8 +379,8 @@ st.markdown(
     """
     <div style="line-height:1.2; font-size:14px;">
       <strong>Kindly remind all vendors to take the accuracy of the submitted information seriously.</strong><br>
-      Any <em>incorrect or incomplete details</em> will result in <em>rejection</em>, and the personnel will not be allowed to enter the data centre.
-      This requirement is non-negotiable, and strict compliance is expected.<br>
+      Any <em>incorrect or incomplete details</em> will result in <em>rejection</em>, and the personnel will not be allowed to enter the data centre.<br>
+      <em>This requirement is non-negotiable, and strict compliance is expected.<em><br>
       Please ensure this message is clearly conveyed to all concerned.
     </div>
     """,
