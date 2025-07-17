@@ -358,7 +358,7 @@ if uploaded:
 
 
 # ───── 5) Final Notice (always shown) ────────────────────────────────────────
-st.markdown(
+#st.markdown(
     """
     <div style="line-height:1.2; font-size:14px;">
       We will do our utmost to deliver your access ticket 1 day before your scheduled entry.<br>
@@ -371,16 +371,40 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True,
-)
+#)
 
 # Vendor Accuracy Reminder…
-st.markdown(
+#st.markdown(
     """
     <div style="line-height:1.2; font-size:14px;">
       <strong>Kindly remind all vendors to take the accuracy of the submitted information seriously.</strong><br>
       Any incorrect or incomplete details will result in rejection, and the personnel will not be allowed to enter the data centre.<br><br>
       <strong>This requirement is non-negotiable, and strict compliance is expected.</strong><br>
       Please ensure this message is clearly conveyed to all concerned.
+    </div>
+    """,
+    unsafe_allow_html=True,
+#)
+
+# ───── 5) Final Notice + Vendor Reminder (always shown) ────────────────────
+st.markdown(
+    """
+    <div style="line-height:1.2; font-size:14px;">
+      We will do our utmost to deliver your access ticket 1 day before your scheduled entry.<br>
+      Kindly ensure that approved access clearance codes are obtained before planning or commencing any work activities in the data center.<br>
+      Please be reminded to go through the Clarity Gate prior to submission, and ensure that all visitor and shipment details are complete and accurate to prevent rescheduling due to clarification.<br><br>
+
+      <strong>Note:</strong><br>
+      The Clarity Gate operates on the GOFAI system, which relies on explicitly programmed rules and logic.<br>
+      Although its validation accuracy can reach up to 95%, we strongly recommend that you thoroughly review all information before submission.<br><br>
+
+      <strong>Kindly remind all vendors to take the accuracy of the submitted information seriously.</strong><br>
+      Any incorrect or incomplete details will result in rejection, and the personnel will not be allowed to enter the data centre.<br><br>
+
+      <strong>This requirement is non-negotiable, and strict compliance is expected.</strong><br>
+      Please ensure this message is clearly conveyed to all concerned.<br><br>
+
+      Thank you for your cooperation.
     </div>
     """,
     unsafe_allow_html=True,
