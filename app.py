@@ -52,11 +52,8 @@ now = datetime.now(ZoneInfo("Asia/Singapore"))
 formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
 st.markdown("### 🗓️ Estimate Clearance Date 🍍")
 
-# highlight the timestamp in grey:
-st.markdown(
-    f"**Today is:** <span style='background-color: #ffffff; padding:2px 4px; border-radius:2px'>{formatted_now}</span>",
-    unsafe_allow_html=True
-)
+# The Today timestamp:
+st.write("**Today is:**", formatted_now)
 
 if st.button("▶️ Calculate Estimated Delivery"):
     if now.time() >= datetime.strptime("15:00", "%H:%M").time():
