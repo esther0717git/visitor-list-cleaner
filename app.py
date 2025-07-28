@@ -250,6 +250,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             if idt == "FIN" and (nat == "Singapore" or pr == "pr"): bad = True
             if idt == "NRIC" and not (nat == "Singapore" or pr == "pr"): bad = True
             if idt == "FIN" and not wpd: bad = True
+            if idt == "WP" and not wpd: bad = True
 
             if bad:
              # highlight the offending cells
