@@ -79,9 +79,6 @@ if st.button("▶️ Calculate Estimated Delivery"):
     st.success(f"✓ Earliest clearance: **{formatted}**")
 
 # ───── Helper Functions ────────────────────────────────────────────────────────
-def smart_title_case(name):
-    words = name.strip().split()
-    return " ".join([w if w.isupper() else w.capitalize() for w in words])
 
 def nationality_group(row):
     nat = str(row["Nationality (Country Name)"]).strip().lower()
@@ -131,11 +128,13 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     ]
     df = df.dropna(subset=df.columns[3:13], how="all")
 
-    # normalize company
+
+    # normalize company # Capitalize each word + fix Pte Ltd formatting
     df["Company Full Name"] = (
     df["Company Full Name"]
       .astype(str)
-      .apply(smart_title_case)
+      .str.strip()
+      .str.title()  # capitalizes each word: "Sea Infra Pte Ltd"
       .str.replace(r"\bPte\s+Ltd\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
     )
 
