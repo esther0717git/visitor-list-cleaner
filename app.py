@@ -79,6 +79,9 @@ if st.button("▶️ Calculate Estimated Delivery"):
     st.success(f"✓ Earliest clearance: **{formatted}**")
 
 # ───── Helper Functions ────────────────────────────────────────────────────────
+def smart_title_case(name):
+    words = name.strip().split()
+    return " ".join([w if w.isupper() else w.capitalize() for w in words])
 
 def nationality_group(row):
     nat = str(row["Nationality (Country Name)"]).strip().lower()
@@ -204,6 +207,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df[wpcol] = pd.to_datetime(df[wpcol], errors="coerce").dt.strftime("%Y-%m-%d")
 
     return df
+    
 def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
