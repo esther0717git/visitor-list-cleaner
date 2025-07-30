@@ -130,10 +130,12 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # normalize company
     df["Company Full Name"] = (
-        df["Company Full Name"]
-          .astype(str)
-          .str.replace(r"\bPTE\s+LTD\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
+    df["Company Full Name"]
+      .astype(str)
+      .apply(smart_title_case)
+      .str.replace(r"\bPte\s+Ltd\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
     )
+
 
     # standardize nationality
     nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","indian":"India"}
