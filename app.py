@@ -80,6 +80,16 @@ if st.button("▶️ Calculate Estimated Delivery"):
 
 # ───── Helper Functions ────────────────────────────────────────────────────────
 
+def smart_title_case(name):
+    words = name.strip().split()
+    cleaned = []
+    for w in words:
+        if len(w) <= 3 and w.isupper():  # treat short uppercase as acronyms
+            cleaned.append(w)
+        else:
+            cleaned.append(w.capitalize())
+    return " ".join(cleaned)
+
 def nationality_group(row):
     nat = str(row["Nationality (Country Name)"]).strip().lower()
     pr  = str(row["PR"]).strip().lower()
@@ -133,11 +143,9 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df["Company Full Name"] = (
     df["Company Full Name"]
       .astype(str)
-      .str.strip()
-      .str.title()  # capitalizes each word: "Sea Infra Pte Ltd"
+      .apply(smart_title_case)
       .str.replace(r"\bPte\s+Ltd\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
     )
-
 
     # standardize nationality
     nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","indian":"India"}
@@ -392,4 +400,3 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
