@@ -192,13 +192,14 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
           .apply(lambda v: "FIN" if v.lower() == "fin" else v.upper())
     )
 
-    # vehicle plates
+
+    # Clean vehicle plate numbers
     df["Vehicle Plate Number"] = (
     df["Vehicle Plate Number"]
       .astype(str)
       .str.strip()
       .str.upper()
-      .replace({"NIL": "", "nan": ""}, regex=False)
+      .replace({r"(?i)^nan$": "", r"(?i)^nil$": ""}, regex=True)
       .str.replace(r"[\/,]", ";", regex=True)
       .str.replace(r"\s*;\s*", ";", regex=True)
       .str.replace(r"\s+", "", regex=True)
