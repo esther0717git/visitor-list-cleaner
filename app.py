@@ -50,7 +50,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
+uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
 
 # ───── 4) Estimate Clearance Date ───────────────────────────────────────────────
 now = datetime.now(ZoneInfo("Asia/Singapore"))
