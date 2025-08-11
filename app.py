@@ -44,7 +44,12 @@ with st.expander("Why is Data Integrity Important?"):
     )
 
 # ───── 3) Uploader & Warning ───────────────────────────────────────────────────
-st.markdown("### ⚠️ **Please ensure your spreadsheet has no missing or malformed fields.**")
+
+st.markdown(
+    """<div style='font-size:14px; font-weight:bold; color:#d97706;'>⚠️ Please ensure your spreadsheet has no missing or malformed fields.</div>""",
+    unsafe_allow_html=True
+)
+
 uploaded = st.file_uploader("📁 Upload your Excel file", type=["xlsx"])
 
 # ───── 4) Estimate Clearance Date ───────────────────────────────────────────────
