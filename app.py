@@ -37,7 +37,7 @@ with st.expander("Why is Data Integrity Important?"):
 with open("sample_template.xlsx", "rb") as f:
     sample_bytes = f.read()
 st.download_button(
-    label="⬇Download Sample Template",
+    label="🌟 Download Template",
     data=sample_bytes,
     file_name="sample_template.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
