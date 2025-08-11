@@ -12,7 +12,6 @@ st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
 st.title("🇸🇬 CLARITY GATE – VISITOR DATA CLEANING & VALIDATION 🫧")
 
 
-
 # ───── 1) Info Banner ──────────────────────────────────────────────────────────
 st.info(
     """
@@ -44,7 +43,6 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
 
-
 # ───── 3) Uploader & Warning ───────────────────────────────────────────────────
 
 st.markdown(
@@ -61,7 +59,6 @@ uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
 now = datetime.now(ZoneInfo("Asia/Singapore"))
 formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
 #st.markdown("### 🗓️ Estimate Clearance Date 🍍")
-
 
 
 # The Today timestamp:
