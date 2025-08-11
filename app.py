@@ -62,7 +62,6 @@ now = datetime.now(ZoneInfo("Asia/Singapore"))
 formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
 #st.markdown("### 🗓️ Estimate Clearance Date 🍍")
 
-)
 
 
 # The Today timestamp:
