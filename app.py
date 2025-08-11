@@ -64,7 +64,7 @@ formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
 # The Today timestamp:
 st.write("**Today is:**", formatted_now)
 
-if st.button("▶️ Calculate Estimated Delivery"):
+if st.button("▶️ Calculate Clearance Day"):
     if now.time() >= datetime.strptime("15:00", "%H:%M").time():
         effective_submission_date = now.date() + timedelta(days=1)
     else:
