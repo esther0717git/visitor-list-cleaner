@@ -46,7 +46,7 @@ with st.expander("Why is Data Integrity Important?"):
 # ───── 3) Uploader & Warning ───────────────────────────────────────────────────
 
 st.markdown(
-    """<div style='font-size:14px; font-weight:bold; color:#d97706;'>⚠️ Please ensure your spreadsheet has no missing or malformed fields.</div>""",
+    """<div style='font-size:14px; font-weight:bold; color:#d97706;'>⚠️ Please ensure your spreadsheet has no missing or malformed fields.Columns E and F are not required to be filled in.</div>""",
     unsafe_allow_html=True
 )
 
