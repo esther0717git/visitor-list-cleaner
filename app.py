@@ -11,16 +11,6 @@ from openpyxl.utils import get_column_letter
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
 st.title("🇸🇬 CLARITY GATE – VISITOR DATA CLEANING & VALIDATION 🫧")
 
-# ───── Download Sample Template ────────────────────────────────────────────────
-# This reads the Excel you committed as sample_template.xlsx in your repo root
-with open("sample_template.xlsx", "rb") as f:
-    sample_bytes = f.read()
-st.download_button(
-    label="🌟 Download Sample Template",
-    data=sample_bytes,
-    file_name="sample_template.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-)
 
 
 # ───── 1) Info Banner ──────────────────────────────────────────────────────────
@@ -42,6 +32,18 @@ with st.expander("Why is Data Integrity Important?"):
         - **Efficiency**: Trustworthy data powers faster reporting and analytics.
         """
     )
+
+# ───── Download Sample Template ────────────────────────────────────────────────
+# This reads the Excel you committed as sample_template.xlsx in your repo root
+with open("sample_template.xlsx", "rb") as f:
+    sample_bytes = f.read()
+st.download_button(
+    label="🌟 Download Sample Template",
+    data=sample_bytes,
+    file_name="sample_template.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+)
+
 
 # ───── 3) Uploader & Warning ───────────────────────────────────────────────────
 
