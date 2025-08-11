@@ -60,7 +60,15 @@ uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
 # ───── 4) Estimate Clearance Date ───────────────────────────────────────────────
 now = datetime.now(ZoneInfo("Asia/Singapore"))
 formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
-st.markdown("### 🗓️ Estimate Clearance Date 🍍")
+#st.markdown("### 🗓️ Estimate Clearance Date 🍍")
+
+st.markdown(
+    """<div style='font-size:13px; color:#374151;'>
+    🕓 <strong>Estimated Clearance Date:</strong> Please allow 2–3 working days after submission.
+    </div>""",
+    unsafe_allow_html=True
+)
+
 
 # The Today timestamp:
 st.write("**Today is:**", formatted_now)
