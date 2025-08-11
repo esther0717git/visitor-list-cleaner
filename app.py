@@ -64,7 +64,7 @@ formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
 # The Today timestamp:
 st.write("**Today is:**", formatted_now)
 
-if st.button("▶️ Calculate Clearance Day"):
+if st.button("▶️ ✓ Earliest clearance:"):
     if now.time() >= datetime.strptime("15:00", "%H:%M").time():
         effective_submission_date = now.date() + timedelta(days=1)
     else:
@@ -85,7 +85,7 @@ if st.button("▶️ Calculate Clearance Day"):
         clearance_date += timedelta(days=1)
 
     formatted = f"{clearance_date:%A} {clearance_date.day} {clearance_date:%B}"
-    st.success(f"✓ Earliest clearance: **{formatted}**")
+    st.success(f" **{formatted}**")
 
 # ───── Helper Functions ────────────────────────────────────────────────────────
 
