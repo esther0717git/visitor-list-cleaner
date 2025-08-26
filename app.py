@@ -214,6 +214,16 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
       .str.replace(r"\s+", "", regex=True)
     )
 
+    # New Split Names : split once on whitespace; fill F with E if missing
+    name_parts = (
+    df["Full Name As Per NRIC"]
+      .astype(str)
+      .str.replace(r"\s+", " ", regex=True)
+      .str.strip()
+      .str.split(r"\s+", n=1, expand=True)
+    )
+    df["First Name as per NRIC"] = name_parts[0]
+    df["Middle and Last Name as per NRIC"] = name_parts[1].fillna(name_parts[0])
 
     # split names
     #df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
@@ -221,18 +231,6 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     #    df["Full Name As Per NRIC"].apply(split_name)
     #)
     
-    # split names for single name and multiple names
-    def split_name(full_name):
-    s = str(full_name).strip()
-    if not s:
-        return pd.Series(["", ""])
-    parts = s.split()
-    if len(parts) == 1:
-        # Single token: put the same full name into both E and F
-        return pd.Series([s, s])
-    else:
-        # Multi-token: first word -> E, remainder -> F
-        return pd.Series([parts[0], " ".join(parts[1:])])
 
     # swap IC/WP if needed
     iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
