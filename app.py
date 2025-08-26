@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import numpy as np  # add at top
 from io import BytesIO
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -214,18 +215,24 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
       .str.replace(r"\s+", "", regex=True)
     )
 
-    # New Split Names : split once on whitespace; fill F with E if missing
-    name_parts = (
+#---------------------#Split Names#-----------------------------#
+    # Normalize spacing/case first (keep your existing title-casing if you like)
+    name = (
     df["Full Name As Per NRIC"]
       .astype(str)
       .str.replace(r"\s+", " ", regex=True)
       .str.strip()
-      .str.split(r"\s+", n=1, expand=True)
     )
-    
-    df["First Name as per NRIC"] = name_parts[0]
-    df["Middle and Last Name as per NRIC"] = name_parts[1].fillna(name_parts[0])
 
+    # Split once on the first space
+    parts = name.str.split(n=1, expand=True)
+    first = parts[0]
+    rest  = parts[1]
+
+    df["First Name as per NRIC"] = first
+    # If 'rest' is NaN OR empty string, copy 'first' into F
+    df["Middle and Last Name as per NRIC"] = np.where(rest.isna() | rest.eq(""), first, rest)
+#----------------------------------------------------------------------#
     # split names
     #df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
     #df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
