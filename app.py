@@ -432,7 +432,7 @@ st.markdown(
       Please be reminded to go through the Clarity Gate prior to submission, and ensure that all visitor and shipment details are complete and accurate to prevent rescheduling due to clarification.<br><br>
       <strong>Note:</strong><br>
       The Clarity Gate operates on the GOFAI system, which relies on explicitly programmed rules and logic.<br>
-      Although its validation accuracy can reach up to 95%, we strongly recommend that you thoroughly review all information before submission.<br>
+      Although its validation accuracy can reach up to 98%, we strongly recommend that you thoroughly review all information before submission.<br>
       Thank you for your cooperation.<br><br>
     </div>
     """,
