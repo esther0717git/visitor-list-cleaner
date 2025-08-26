@@ -222,6 +222,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
       .str.strip()
       .str.split(r"\s+", n=1, expand=True)
     )
+    
     df["First Name as per NRIC"] = name_parts[0]
     df["Middle and Last Name as per NRIC"] = name_parts[1].fillna(name_parts[0])
 
