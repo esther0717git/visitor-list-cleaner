@@ -114,12 +114,12 @@ def nationality_group(row):
     else:
         return 5
 
-#def split_name(full_name):
-#    s = str(full_name).strip()
-#    if " " in s:
-#        i = s.find(" ")
-#        return pd.Series([s[:i], s[i+1:]])
-#    return pd.Series([s, ""])
+def split_name(full_name):
+    s = str(full_name).strip()
+    if " " in s:
+        i = s.find(" ")
+        return pd.Series([s[:i], s[i+1:]])
+    return pd.Series([s, ""])
 
 def clean_gender(g):
     v = str(g).strip().upper()
