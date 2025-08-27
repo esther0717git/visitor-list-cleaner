@@ -114,12 +114,12 @@ def nationality_group(row):
     else:
         return 5
 
-def split_name(full_name):
-    s = str(full_name).strip()
-    if " " in s:
-        i = s.find(" ")
-        return pd.Series([s[:i], s[i+1:]])
-    return pd.Series([s, ""])
+#def split_name(full_name):
+#    s = str(full_name).strip()
+#    if " " in s:
+#        i = s.find(" ")
+#        return pd.Series([s[:i], s[i+1:]])
+#    return pd.Series([s, ""])
 
 def clean_gender(g):
     v = str(g).strip().upper()
@@ -215,9 +215,26 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # split names 
-    df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title() 
-    df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = ( 
-        df["Full Name As Per NRIC"].apply(split_name) )
+    #df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title() 
+    #df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = ( 
+    #    df["Full Name As Per NRIC"].apply(split_name) )
+
+    # ---------------- Split Names (enhanced & safe) ----------------
+    # Normalize spacing/casing first
+    df["Full Name As Per NRIC"] = (
+        df["Full Name As Per NRIC"]
+          .astype(str)
+          .str.replace(r"\s+", " ", regex=True)
+          .str.strip()
+          .str.title()
+    )
+    # Explicit regex to avoid pandas None-pattern TypeError
+    parts = df["Full Name As Per NRIC"].str.split(r"\s+", n=1, expand=True)
+    df["First Name as per NRIC"] = parts[0]
+    # If there’s no second token, copy first name into F
+    df["Middle and Last Name as per NRIC"] = parts[1].fillna(parts[0])
+    # ---------------------------------------------------------------
+
 
     # swap IC/WP if needed
     iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
@@ -381,8 +398,14 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
 
     
 # ───── Read, Clean & Download ────────────────────────────────────────────────
-if uploaded:
+#if uploaded:
+#    raw_df = pd.read_excel(uploaded, sheet_name="Visitor List")
+
+try:
     raw_df = pd.read_excel(uploaded, sheet_name="Visitor List")
+except Exception:
+    raw_df = pd.read_excel(uploaded)
+    
     company_cell = raw_df.iloc[0, 2]
     company = (
         str(company_cell).strip()
