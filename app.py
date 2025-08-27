@@ -398,13 +398,9 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
 
     
 # ───── Read, Clean & Download ────────────────────────────────────────────────
-#if uploaded:
-#    raw_df = pd.read_excel(uploaded, sheet_name="Visitor List")
-
-try:
+if uploaded:
     raw_df = pd.read_excel(uploaded, sheet_name="Visitor List")
-except Exception:
-    raw_df = pd.read_excel(uploaded)
+
     
     company_cell = raw_df.iloc[0, 2]
     company = (
