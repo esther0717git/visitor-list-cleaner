@@ -214,13 +214,23 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
       .str.replace(r"\s+", "", regex=True)
     )
 
-
-    # split names
-    df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
-    df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
-        df["Full Name As Per NRIC"].apply(split_name)
+# ---------------- Split Names (enhanced) ----------------
+# Normalize spacing and capitalization
+    df["Full Name As Per NRIC"] = (
+        df["Full Name As Per NRIC"]
+          .astype(str)
+          .str.replace(r"\s+", " ", regex=True)
+          .str.strip()
+          .str.title()
     )
+
+# Split into first + rest
+    parts = df["Full Name As Per NRIC"].str.split(None, 1, expand=True)
     
+    df["First Name as per NRIC"] = parts[0]
+    df["Middle and Last Name as per NRIC"] = parts[1].fillna(parts[0])
+# --------------------------------------------------------
+
 
     # swap IC/WP if needed
     iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
