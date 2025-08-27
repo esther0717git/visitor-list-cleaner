@@ -148,14 +148,6 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     ]
     df = df.dropna(subset=df.columns[3:13], how="all")
 
-    #27 Aug 
-    parts = name.str.split(n=1, expand=True)
-    first = parts[0]
-    rest  = parts[1]
-
-    df["First Name as per NRIC"] = first
-    df["Middle and Last Name as per NRIC"] = np.where(rest.isna() | rest.eq(""), first, rest)
-
     # normalize company # Capitalize each word + fix Pte Ltd formatting
     df["Company Full Name"] = (
     df["Company Full Name"]
@@ -222,29 +214,12 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
       .str.replace(r"\s+", "", regex=True)
     )
 
-#---------------------#Split Names#-----------------------------#
-    # Normalize spacing/case first (keep your existing title-casing if you like)
-    #name = (
-    #df["Full Name As Per NRIC"]
-    #  .astype(str)
-    #  .str.replace(r"\s+", " ", regex=True)
-    #  .str.strip()
-    #)
 
-    # Split once on the first space
-    ##parts = name.str.split(n=1, expand=True)
-    #first = parts[0]
-    #rest  = parts[1]
-
-    #df["First Name as per NRIC"] = first
-    # If 'rest' is NaN OR empty string, copy 'first' into F
-    #df["Middle and Last Name as per NRIC"] = np.where(rest.isna() | rest.eq(""), first, rest)
-#----------------------------------------------------------------------#
     # split names
-    #df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
-    #df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
-    #    df["Full Name As Per NRIC"].apply(split_name)
-    #)
+    df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
+    df[["First Name as per NRIC","Middle and Last Name as per NRIC"]] = (
+        df["Full Name As Per NRIC"].apply(split_name)
+    )
     
 
     # swap IC/WP if needed
