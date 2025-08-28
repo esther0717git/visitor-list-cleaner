@@ -349,15 +349,9 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
                 else:
                     seen[name] = r
 
-        #if errors:
-        #    st.warning(f"⚠️ {errors} validation error(s) found.")
-        
         if errors:
-            st.warning(
-                f"⚠️ {errors} validation issue(s) found "
-                "(expiring within 6 months permits)."
-            )
-
+            st.warning(f"⚠️ {errors} validation error(s) found.")
+        
         # Set fixed column widths
         column_widths = {
             "A": 3.38,
