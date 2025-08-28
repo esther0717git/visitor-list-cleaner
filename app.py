@@ -334,52 +334,22 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
                 ws[f"I{r}"].fill = warning_fill
                 errors += 1
 
-# ── NEW RULES (cell-specific highlighting) ────────────────────────────
+
+             #── NEW RULE: Singaporeans cannot be PR ────────────────────────────
             if nat == "Singapore" and pr == "pr":
-                ws[f"J{r}"].fill = warning_fill  # Nationality
-                ws[f"K{r}"].fill = warning_fill  # PR
-                errors += 1
-            
-            if idt != "NRIC" and pr == "pr":
-                ws[f"G{r}"].fill = warning_fill  # ID type
-                ws[f"K{r}"].fill = warning_fill  # PR
-                errors += 1
-            
-            if idt == "FIN" and (nat == "Singapore" or pr == "pr"):
-                ws[f"G{r}"].fill = warning_fill
-                if nat == "Singapore":
-                    ws[f"J{r}"].fill = warning_fill
-                if pr == "pr":
-                    ws[f"K{r}"].fill = warning_fill
-                errors += 1
-            
-            if idt == "NRIC" and not (nat == "Singapore" or pr == "pr"):
-                ws[f"G{r}"].fill = warning_fill
-                ws[f"J{r}"].fill = warning_fill
-                ws[f"K{r}"].fill = warning_fill
-                errors += 1
-            
-            if idt in ("FIN","WP") and not wpd:
-                ws[f"G{r}"].fill = warning_fill
-                ws[f"I{r}"].fill = warning_fill
-                errors += 1
-#-----#
-
-            # ── NEW RULE: Singaporeans cannot be PR ────────────────────────────
-            #if nat == "Singapore" and pr == "pr":
-            #    bad = True
+                bad = True
            
-            #if idt != "NRIC" and pr == "pr": bad = True
-            #if idt == "FIN" and (nat == "Singapore" or pr == "pr"): bad = True
-            #if idt == "NRIC" and not (nat == "Singapore" or pr == "pr"): bad = True
-            #if idt == "FIN" and not wpd: bad = True
-            #if idt == "WP" and not wpd: bad = True
+            if idt != "NRIC" and pr == "pr": bad = True
+            if idt == "FIN" and (nat == "Singapore" or pr == "pr"): bad = True
+            if idt == "NRIC" and not (nat == "Singapore" or pr == "pr"): bad = True
+            if idt == "FIN" and not wpd: bad = True
+            if idt == "WP" and not wpd: bad = True
 
-            #if bad:
-            # # highlight the offending cells
-            #    for col in ("G","J","K","I"):
-            #        ws[f"{col}{r}"].fill = warning_fill
-            #    errors += 1
+            if bad:
+             # highlight the offending cells
+                for col in ("G","J","K","I"):
+                    ws[f"{col}{r}"].fill = warning_fill
+                errors += 1
 
             # ─── duplicate‐check on column D ──────────────────────────
             if name:
