@@ -329,10 +329,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
                     #     ws[f"{get_column_letter(c)}{r}"].fill = warning_fill
            
             except ValueError:
-                # If invalid date, overwrite with "Invalid" and highlight
-                ws[f"I{r}"].value = "Invalid"
-                ws[f"I{r}"].fill = warning_fill
-                errors += 1
+                pass  # skip if not a valid date
 
 
             # ── NEW RULE: Singaporeans cannot be PR ────────────────────────────
