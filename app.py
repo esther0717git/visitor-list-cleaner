@@ -3,7 +3,7 @@ import pandas as pd
 import re
 import numpy as np  # add at top
 from io import BytesIO
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
