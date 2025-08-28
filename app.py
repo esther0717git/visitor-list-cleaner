@@ -335,7 +335,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
                 errors += 1
 
 
-             #── NEW RULE: Singaporeans cannot be PR ────────────────────────────
+            # ── NEW RULE: Singaporeans cannot be PR ────────────────────────────
             if nat == "Singapore" and pr == "pr":
                 bad = True
            
@@ -358,7 +358,6 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
                     ws[f"D{r}"].fill = warning_fill
                     ws[f"D{seen[name]}"].fill = warning_fill
                     errors += 1
-            
                 else:
                     seen[name] = r
 
