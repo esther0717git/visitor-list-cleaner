@@ -299,7 +299,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
 
             bad = False
 
-             ─── highlight if expiry date is today or past ─────────────
+             #─── highlight if expiry date is today or past ─────────────
             expiry_str = str(ws[f"I{r}"].value).strip()
             try:
                 expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
