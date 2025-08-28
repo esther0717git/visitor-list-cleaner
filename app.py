@@ -381,7 +381,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             #        ws[f"{col}{r}"].fill = warning_fill
             #    errors += 1
 
-             ─── duplicate‐check on column D ──────────────────────────
+            # ─── duplicate‐check on column D ──────────────────────────
             if name:
                 if name in seen:
                     # highlight both the old row and the new row
