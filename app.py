@@ -3,10 +3,11 @@ import pandas as pd
 import re
 import numpy as np  # add at top
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from zoneinfo import ZoneInfo
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
+
 
 # ───── Streamlit setup ────────────────────────────────────────────────────────
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
