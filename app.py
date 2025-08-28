@@ -300,69 +300,28 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             bad = False
 
 
-            # ─── highlight if expiry date is expired OR within 6 months ───
-            #expiry_str = str(ws[f"I{r}"].value).strip()
-            #try:
-            #    expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
-            #    today_sg = datetime.now(ZoneInfo("Asia/Singapore")).date()
-            #    six_months_ahead = today_sg + timedelta(days=180)  # ≈ 6 months
-            
-                # Note: <= six_months_ahead already covers "expired" as well
-            #    if expiry_date <= six_months_ahead:
-                    # highlight just the expiry cell:
-            #        ws[f"I{r}"].fill = warning_fill
-            #        errors += 1
-            
-            
-            #except ValueError:
-                # If invalid date, overwrite with "Invalid" and highlight
-            #    ws[f"I{r}"].value = "Invalid"
-            #    ws[f"I{r}"].fill = warning_fill
-            #    errors += 1
-
-            expiry_issue = False  # track if we've already flagged the expiry cell
-            
-            # ─── expiry validation (expired / ≤ 6 months / invalid) ───
+             ─── highlight if expiry date is expired OR within 6 months ───
             expiry_str = str(ws[f"I{r}"].value).strip()
             try:
                 expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
                 today_sg = datetime.now(ZoneInfo("Asia/Singapore")).date()
-                six_months_ahead = today_sg + timedelta(days=180)  # ≈6 months
+                six_months_ahead = today_sg + timedelta(days=180)  # ≈ 6 months
             
+                # Note: <= six_months_ahead already covers "expired" as well
                 if expiry_date <= six_months_ahead:
+                    # highlight just the expiry cell:
                     ws[f"I{r}"].fill = warning_fill
                     errors += 1
-                    expiry_issue = True
+            
+            
             except ValueError:
-                # empty or non-date → mark Invalid and count once
+                # If invalid date, overwrite with "Invalid" and highlight
                 ws[f"I{r}"].value = "Invalid"
                 ws[f"I{r}"].fill = warning_fill
                 errors += 1
-                expiry_issue = True
-            
-            # ── business rules ─────────────────────────────────────────
-            # (other rules stay as-is)
-            if nat == "Singapore" and pr == "pr":
-                bad = True
-            if idt != "NRIC" and pr == "pr":
-                bad = True
-            if idt == "FIN" and (nat == "Singapore" or pr == "pr"):
-                bad = True
-            if idt == "NRIC" and not (nat == "Singapore" or pr == "pr"):
-                bad = True
-            
-            # Only fire the "missing WP expiry" error if we DIDN'T already flag expiry
-            if not expiry_issue:
-                if idt == "FIN" and not expiry_str:
-                    bad = True
-                if idt == "WP" and not expiry_str:
-                    bad = True
-            
-            if bad:
-                for col in ("G", "J", "K", "I"):
-                    ws[f"{col}{r}"].fill = warning_fill
-                errors += 1
 
+            expiry_issue = False  # track if we've already flagged the expiry cell
+            
 
             # ── NEW RULE: Singaporeans cannot be PR ────────────────────────────
             if nat == "Singapore" and pr == "pr":
