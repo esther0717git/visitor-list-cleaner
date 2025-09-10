@@ -312,7 +312,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             #    pass  # skip if not a valid date
 
             # ─── highlight if expiry date is expired OR within 1 month ───
-            expiry_str = str(ws[f"I{r}"].value or "").strip()
+            expiry_str = str(ws[f"I{r}"].value).strip()
             
             try:
                 expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
