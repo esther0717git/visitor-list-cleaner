@@ -300,17 +300,33 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             bad = False
 
              #─── highlight if expiry date is today or past ─────────────
-            expiry_str = str(ws[f"I{r}"].value).strip()
+            #expiry_str = str(ws[f"I{r}"].value).strip()
+            #try:
+            #    expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
+            #    if expiry_date <= datetime.now(ZoneInfo("Asia/Singapore")).date():
+            #        for col in range(1, ws.max_column + 1):
+            #            ws[f"I{r}"].fill = warning_fill
+            #            #ws[f"{get_column_letter(col)}{r}"].fill = warning_fill
+            #        errors += 1
+            #except ValueError:
+            #    pass  # skip if not a valid date
+
+            # ─── highlight if expiry date is expired OR within 1 month ───
+            expiry_str = str(ws[f"I{r}"].value or "").strip()
+            
             try:
                 expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
-                if expiry_date <= datetime.now(ZoneInfo("Asia/Singapore")).date():
-                    for col in range(1, ws.max_column + 1):
-                        ws[f"I{r}"].fill = warning_fill
-                        #ws[f"{get_column_letter(col)}{r}"].fill = warning_fill
+                today_sg = datetime.now(ZoneInfo("Asia/Singapore")).date()
+                cutoff = today_sg + timedelta(days=30)  # ≈ 1 month ahead
+            
+                if expiry_date <= cutoff:
+                    # highlight just the expiry date cell
+                    ws[f"I{r}"].fill = warning_fill
                     errors += 1
+            
             except ValueError:
-                pass  # skip if not a valid date
-
+                # skip if not a valid date string
+                pass
 
             # ─── highlight if expiry date is expired OR within 6 months ───
             #expiry_str = str(ws[f"I{r}"].value).strip()
