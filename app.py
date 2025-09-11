@@ -138,6 +138,10 @@ def normalize_pr(value):
     else:
         return val.upper() if val.isalpha() else val
 
+def safe_str(cell):
+    """Return a trimmed string or empty string if cell is None/NaN."""
+    return str(cell or "").strip()
+
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # keep first 13 cols & rename
     df = df.iloc[:, :13]
@@ -266,12 +270,16 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
         ws = writer.sheets["Visitor List"]
 
         header_fill  = PatternFill("solid", fgColor="94B455")
-        warning_fill = PatternFill("solid", fgColor="DA9694")
+        warning_fill = PatternFill("solid", fgColor="DA9694")  # existing "red"
         border       = Border(*[Side("thin")]*4)
         center       = Alignment("center","center")
         normal_font  = Font(name="Calibri", size=9)
         bold_font    = Font(name="Calibri", size=9, bold=True)
+        expired_fill = warning_fill                             # alias for clarity
+        soon_fill    = PatternFill("solid", fgColor="F9CB9C")   # orange for <1 month
 
+
+        
         # style all cells
         for row in ws.iter_rows():
             for cell in row:
@@ -312,22 +320,43 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             #    pass  # skip if not a valid date
 
             # ─── highlight if expiry date is expired OR within 1 month ───
-            expiry_str = str(ws[f"I{r}"].value).strip()
+            #expiry_str = str(ws[f"I{r}"].value).strip()
             
+            #try:
+            #    expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
+            #    today_sg = datetime.now(ZoneInfo("Asia/Singapore")).date()
+            #    cutoff = today_sg + timedelta(days=30)  # ≈ 1 month ahead
+            
+            #    if expiry_date <= cutoff:
+            #        # highlight just the expiry date cell
+            #        ws[f"I{r}"].fill = warning_fill
+            #        errors += 1
+            
+            #except ValueError:
+            #    # skip if not a valid date string
+            #    pass
+                
+            # ─── highlight expiry: red if expired, orange if ≤30 days ahead ───
+            #expiry_str = safe_str(ws[f"I{r}"].value)
+            expiry_str = str(ws[f"I{r}"].value).strip()
             try:
                 expiry_date = datetime.strptime(expiry_str, "%Y-%m-%d").date()
                 today_sg = datetime.now(ZoneInfo("Asia/Singapore")).date()
-                cutoff = today_sg + timedelta(days=30)  # ≈ 1 month ahead
+                cutoff = today_sg + timedelta(days=30)
             
-                if expiry_date <= cutoff:
-                    # highlight just the expiry date cell
-                    ws[f"I{r}"].fill = warning_fill
+                if expiry_date < today_sg:
+                    # already expired → red (same as your existing warning_fill)
+                    ws[f"I{r}"].fill = expired_fill
+                    errors += 1
+                elif expiry_date <= cutoff:
+                    # expiring within 1 month → orange (#f9cb9c)
+                    ws[f"I{r}"].fill = soon_fill
                     errors += 1
             
             except ValueError:
                 # skip if not a valid date string
                 pass
-
+    
             # ─── highlight if expiry date is expired OR within 6 months ───
             #expiry_str = str(ws[f"I{r}"].value).strip()
             #try:
