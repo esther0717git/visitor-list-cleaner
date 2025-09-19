@@ -49,8 +49,6 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
 
-uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
-
 # ───── 4) Estimate Clearance Date ───────────────────────────────────────────────
 now = datetime.now(ZoneInfo("Asia/Singapore"))
 formatted_now = now.strftime("%A %d %B, %I:%M%p").lstrip("0")
@@ -83,6 +81,7 @@ if st.button("▶️ Earliest clearance:"):
     formatted = f"{clearance_date:%A} {clearance_date.day} {clearance_date:%B}"
     st.success(f" **{formatted}**")
 
+uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
 
 # ───── Helper Functions ────────────────────────────────────────────────────────
 
