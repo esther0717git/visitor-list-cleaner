@@ -38,8 +38,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
-
 # ───── Download Sample Template ────────────────────────────────────────────────
 # This reads the Excel you committed as SG_Template.xlsx in your repo root
 with open("SG_Template.xlsx", "rb") as f:
@@ -50,6 +48,8 @@ st.download_button(
     file_name="SG_Template.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
+
+uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
 
 # ───── 4) Estimate Clearance Date ───────────────────────────────────────────────
 now = datetime.now(ZoneInfo("Asia/Singapore"))
