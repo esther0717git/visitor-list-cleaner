@@ -28,6 +28,16 @@ st.info(
     """
 )
 
+# ───── 3) Uploader & Warning ───────────────────────────────────────────────────
+
+st.markdown(
+    """<div style='font-size:16px; font-weight:bold; color:#38761d;'>
+    Please ensure your spreadsheet has no missing or malformed fields.<br>
+    Columns E (First Name) and Column F (Middle and Last Name) are not required to be filled in.
+    </div>""",
+    unsafe_allow_html=True
+)
+
 # ───── Download Sample Template ────────────────────────────────────────────────
 # This reads the Excel you committed as SG_Template.xlsx in your repo root
 with open("SG_Template.xlsx", "rb") as f:
@@ -73,15 +83,6 @@ if st.button("▶️ Earliest clearance:"):
     formatted = f"{clearance_date:%A} {clearance_date.day} {clearance_date:%B}"
     st.success(f" **{formatted}**")
 
-# ───── 3) Uploader & Warning ───────────────────────────────────────────────────
-
-st.markdown(
-    """<div style='font-size:16px; font-weight:bold; color:#38761d;'>
-    Please ensure your spreadsheet has no missing or malformed fields.<br>
-    Columns E (First Name) and Column F (Middle and Last Name) are not required to be filled in.
-    </div>""",
-    unsafe_allow_html=True
-)
 
 # ───── Helper Functions ────────────────────────────────────────────────────────
 
