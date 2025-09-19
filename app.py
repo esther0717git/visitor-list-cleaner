@@ -11,7 +11,7 @@ from openpyxl.utils import get_column_letter
 
 # ───── Streamlit setup ────────────────────────────────────────────────────────
 st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
-st.title("🇸🇬 CLARITY GATE – VISITOR DATA CLEANING & VALIDATION 🫧")
+st.title("🇸🇬 Clarity Gate – Visitor Data Cleaning & Validation 🫧")
 
 
 # ───── 1) Info Banner ──────────────────────────────────────────────────────────
