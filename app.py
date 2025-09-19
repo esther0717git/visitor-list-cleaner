@@ -14,25 +14,19 @@ st.set_page_config(page_title="Visitor List Cleaner", layout="wide")
 st.title("🇸🇬 Clarity Gate – Visitor Data Cleaning & Validation 🫧")
 
 
-# ───── 1) Info Banner ──────────────────────────────────────────────────────────
 st.info(
     """
     **Data Integrity Is Our Foundation**  
     At every step—from file upload to final report—we enforce strict validation to guarantee your visitor data is accurate, complete, and compliant.  
-    Maintaining integrity not only expedites gate clearance, it protects our facilities and ensures we meet all regulatory requirements.
+    Maintaining integrity not only expedites gate clearance, it protects our facilities and ensures we meet all regulatory requirements.  
+
+    **Why is Data Integrity Important?**  
+    **Accuracy**: Correct visitor details reduce clearance delays.  
+    **Security**: Reliable ID checks prevent unauthorized access.  
+    **Compliance**: Audit-ready records ensure regulatory adherence.  
+    **Efficiency**: Trustworthy data powers faster reporting and analytics.
     """
 )
-
-# ───── 2) Why Data Integrity? ───────────────────────────────────────────────────
-with st.expander("Why is Data Integrity Important?"):
-    st.write(
-        """
-        - **Accuracy**: Correct visitor details reduce clearance delays.  
-        - **Security**: Reliable ID checks prevent unauthorized access.  
-        - **Compliance**: Audit-ready records ensure regulatory adherence.  
-        - **Efficiency**: Trustworthy data powers faster reporting and analytics.
-        """
-    )
 
 # ───── Download Sample Template ────────────────────────────────────────────────
 # This reads the Excel you committed as SG_Template.xlsx in your repo root
