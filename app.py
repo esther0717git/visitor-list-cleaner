@@ -48,9 +48,9 @@ st.download_button(
 # ───── 3) Uploader & Warning ───────────────────────────────────────────────────
 
 st.markdown(
-    """<div style='font-size:14px; font-weight:bold; color:#38761d;'>
+    """<div style='font-size:16px; font-weight:bold; color:#38761d;'>
     Please ensure your spreadsheet has no missing or malformed fields.<br>
-    Columns E and F are not required to be filled in.
+    Columns E (First Name) and Column F (Middle and Last Name) are not required to be filled in.
     </div>""",
     unsafe_allow_html=True
 )
@@ -498,7 +498,7 @@ if uploaded:
 # ───── 5) Final Notice (always shown) ────────────────────────────────────────
 st.markdown(
     """
-    <div style="line-height:1.2; font-size:14px;">
+    <div style="line-height:1.2; font-size:16px;">
       We will do our utmost to deliver your access ticket 1 day before your scheduled entry.<br>
       Kindly ensure that approved access clearance codes are obtained before planning or commencing any work activities in the data center.<br>
       Please be reminded to go through the Clarity Gate prior to submission, and ensure that all visitor and shipment details are complete and accurate to prevent rescheduling due to clarification.<br><br>
@@ -515,7 +515,7 @@ st.markdown(
 # ───── 6) Vendor Accuracy Reminder (always shown) ────────────────────────────
 st.markdown(
     """
-    <div style="line-height:1.2; font-size:14px;">
+    <div style="line-height:1.2; font-size:16px;">
       <strong>Kindly remind all vendors to take the accuracy of the submitted information seriously.</strong><br>
       Any <em>incorrect or incomplete details</em> will result in <em>rejection</em>, and the personnel will not be allowed to enter the data centre.<br>
       <em>This requirement is non-negotiable, and strict compliance is expected.<em><br>
