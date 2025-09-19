@@ -45,7 +45,7 @@ uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
 with open("SG_Template.xlsx", "rb") as f:
     sample_bytes = f.read()
 st.download_button(
-    label="🌟 Download Template",
+    label="⬇️ Download SG Template",
     data=sample_bytes,
     file_name="SG_Template.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
