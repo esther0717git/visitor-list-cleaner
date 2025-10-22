@@ -89,7 +89,7 @@ def smart_title_case(name):
     words = name.strip().split()
     cleaned = []
     for w in words:
-        if len(w) <= 3 and w.isupper():  # treat short uppercase as acronyms
+        if len(w) <= 2 and w.isupper():  # treat short uppercase as acronyms
             cleaned.append(w)
         else:
             cleaned.append(w.capitalize())
