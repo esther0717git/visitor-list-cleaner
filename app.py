@@ -439,7 +439,7 @@ def generate_visitor_only(df: pd.DataFrame) -> BytesIO:
             ws[f"B{ins}"].border = border
             ws[f"B{ins}"].alignment = center
 
-            ws[f"B{ins+1}"].value = ";".join(sorted(set(plates)))
+            ws[f"B{ins+1}"].value = ",".join(sorted(set(plates)))
             ws[f"B{ins+1}"].font = Font(size=9)
             ws[f"B{ins+1}"].border = border
             ws[f"B{ins+1}"].alignment = center
