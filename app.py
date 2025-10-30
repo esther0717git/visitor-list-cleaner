@@ -208,10 +208,22 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
       .str.strip()
       .str.upper()
       .replace({r"(?i)^nan$": "", r"(?i)^nil$": ""}, regex=True)
-      .str.replace(r"[\/,]", ";", regex=True)
-      .str.replace(r"\s*;\s*", ";", regex=True)
+      .str.replace(r"[\/;]", ",", regex=True)     # ✅ convert ; or / to commas
+      .str.replace(r"\s*,\s*", ",", regex=True)   # remove extra spaces around commas
       .str.replace(r"\s+", "", regex=True)
     )
+
+
+   # df["Vehicle Plate Number"] = (
+   # df["Vehicle Plate Number"]
+   #   .astype(str)
+   #   .str.strip()
+   #   .str.upper()
+   #   .replace({r"(?i)^nan$": "", r"(?i)^nil$": ""}, regex=True)
+   #   .str.replace(r"[\/,]", ";", regex=True)
+   #   .str.replace(r"\s*;\s*", ";", regex=True)
+   #   .str.replace(r"\s+", "", regex=True)
+   # )
 
     # split names
     #df["Full Name As Per NRIC"] = df["Full Name As Per NRIC"].astype(str).str.title()
