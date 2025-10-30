@@ -239,7 +239,15 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     iccol, wpcol = "IC (Last 3 digits and suffix) 123A", "Work Permit Expiry Date"
     if df[iccol].astype(str).str.contains("-", na=False).any():
         df[[iccol, wpcol]] = df[[wpcol, iccol]]
-    df[iccol] = df[iccol].astype(str).str[-4:]
+    #df[iccol] = df[iccol].astype(str).str[-4:]
+    df[iccol] = (
+    df[iccol]
+      .astype(str)
+      .str.replace(r"\s+", "", regex=True)  # ignore spaces
+      .str[-4:]
+      .str.upper()
+)
+
 
     # clean mobile
     def fix_mobile(x):
