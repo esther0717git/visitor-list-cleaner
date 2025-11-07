@@ -148,12 +148,27 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=df.columns[3:13], how="all")
 
     # normalize company # Capitalize each word + fix Pte Ltd formatting
+    # df["Company Full Name"] = (
+    # df["Company Full Name"]
+    #   .astype(str)
+    #   .apply(smart_title_case)
+    #   .str.replace(r"\bPte\s+Ltd\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
+    # )
+
+    # normalize company # Capitalize each word + fix Pte Ltd formatting
     df["Company Full Name"] = (
     df["Company Full Name"]
       .astype(str)
+      .str.strip()
       .apply(smart_title_case)
+      # Title-case any text inside parentheses: (logistics) -> (Logistics)
+      .str.replace(r"\(([^)]+)\)", lambda m: f"({m.group(1).title()})", regex=True)
+      # Force the acronym MFI, regardless of input casing
+      .str.replace(r"\bMfi\b", "MFI", flags=re.IGNORECASE, regex=True)
+      # Keep consistent "Pte Ltd"
       .str.replace(r"\bPte\s+Ltd\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
     )
+
 
     # standardize nationality
     nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","indian":"India"}
