@@ -541,26 +541,21 @@ if uploaded:
 
     cleaned = clean_data(raw_df)
     out_buf = generate_visitor_only(cleaned)
-    
-    # --- Generate filename: Company_YYYYMMDD.xlsx ---
+
     today_str = datetime.now(ZoneInfo("Asia/Singapore")).strftime("%Y%m%d")
-    
-    # Clean company name for safe filename use
-    safe_company = re.sub(r'[\\/*?:<>|"“”]', "", str(company)).strip()
-    
-    fname = f"{safe_company}_{today_str}.xlsx"
-    
+    fname = f"{company}_{today_str}.xlsx"
+
     st.download_button(
         label="📥 Download Cleaned Visitor List",
         data=out_buf.getvalue(),
         file_name=fname,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-    
+
     st.caption(
         "✅ Your data has been validated. Please double-check critical fields before sharing with DC team."
     )
-
+    
 
 
 # ───── 5) Final Notice (always shown) ────────────────────────────────────────
