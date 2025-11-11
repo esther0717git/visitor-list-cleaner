@@ -156,6 +156,20 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     # )
 
     # normalize company # Capitalize each word + fix Pte Ltd formatting
+    #df["Company Full Name"] = (
+    #df["Company Full Name"]
+    #  .astype(str)
+    #  .str.strip()
+    #  .apply(smart_title_case)
+    #  # Title-case any text inside parentheses: (logistics) -> (Logistics)
+    #  .str.replace(r"\(([^)]+)\)", lambda m: f"({m.group(1).title()})", regex=True)
+    #  # Force the acronym MFI, regardless of input casing
+    #  .str.replace(r"\bMfi\b", "MFI", flags=re.IGNORECASE, regex=True)
+    #  # Keep consistent "Pte Ltd"
+    #  .str.replace(r"\bPte\s+Ltd\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
+   # )
+
+    # --- Company name normalization ---
     df["Company Full Name"] = (
     df["Company Full Name"]
       .astype(str)
@@ -163,13 +177,37 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
       .apply(smart_title_case)
       # Title-case any text inside parentheses: (logistics) -> (Logistics)
       .str.replace(r"\(([^)]+)\)", lambda m: f"({m.group(1).title()})", regex=True)
-      # Force the acronym MFI, regardless of input casing
+      # Force specific acronyms like MFI
       .str.replace(r"\bMfi\b", "MFI", flags=re.IGNORECASE, regex=True)
       # Keep consistent "Pte Ltd"
       .str.replace(r"\bPte\s+Ltd\b", "Pte Ltd", flags=re.IGNORECASE, regex=True)
     )
 
+# --- Apply manual company name corrections (case-insensitive) ---
+    df["Company Full Name"] = (
+    df["Company Full Name"]
+      # Atlas M&E Services
+      .str.replace(
+          r"(?i)^atlas m[&e]+ services pte\.? ltd\.?$",
+          "Atlas M&E Services Pte Ltd",
+          regex=True
+      )
+      # CloudEngine Digital
+      .str.replace(
+          r"(?i)^cloudengine digital pte\.? ltd\.?$",
+          "Cloudengine Digital Pte Ltd",
+          regex=True
+      )
+      # Johnjohn RRR
+      .str.replace(
+          r"(?i)^johnjohn r+r+ pte\.? ltd\.?$",
+          "Johnjohn RRR Pte. Ltd.",
+          regex=True
+      )
+    )
 
+
+#----------------------------------------------------------------------------------------------------------#
     # standardize nationality
     nat_map = {"chinese":"China","singaporean":"Singapore","malaysian":"Malaysia","indian":"India"}
     nat_map = {
