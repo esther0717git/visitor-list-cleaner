@@ -85,15 +85,30 @@ uploaded = st.file_uploader("📁 Upload file", type=["xlsx"])
 
 # ───── Helper Functions ────────────────────────────────────────────────────────
 
+#def smart_title_case(name):
+#    words = name.strip().split()
+#    cleaned = []
+#    for w in words:
+#        if len(w) <= 2 and w.isupper():  # treat short uppercase as acronyms
+#            cleaned.append(w)
+#        else:
+#            cleaned.append(w.capitalize())
+#    return " ".join(cleaned)
+
+
 def smart_title_case(name):
     words = name.strip().split()
     cleaned = []
     for w in words:
-        if len(w) <= 2 and w.isupper():  # treat short uppercase as acronyms
+        if len(w) <= 2 and w.isupper():
             cleaned.append(w)
         else:
-            cleaned.append(w.capitalize())
+            w = w.capitalize()
+            # Special rule: if there's an '&' and next char is lowercase, fix it
+            w = re.sub(r"&([a-z])", lambda m: "&" + m.group(1).upper(), w)
+            cleaned.append(w)
     return " ".join(cleaned)
+
 
 def nationality_group(row):
     nat = str(row["Nationality (Country Name)"]).strip().lower()
